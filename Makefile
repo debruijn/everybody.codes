@@ -20,10 +20,10 @@ create: create_day_folder
 
 add_empty_example_file:
 	for i in $$(seq 1 ${N_EXAMPLES}); do \
-		touch ${YEAR}/${DAY}/example$$i; \
+		touch ${YEAR}/${DAY}/example$$i.txt; \
 	done
 
 add_empty_data_files:
-	touch ${YEAR}/${DAY}/data1
-	touch ${YEAR}/${DAY}/data2
-	touch ${YEAR}/${DAY}/data3
+	touch ${YEAR}/${DAY}/data1.txt
+	touch ${YEAR}/${DAY}/data2.txt
+	touch ${YEAR}/${DAY}/data3.txt
