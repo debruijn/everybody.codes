@@ -18,6 +18,12 @@ fn run_part3<'a>(input_str: Vec<String>) -> String {
 }
 
 fn main() {
+    // Plan:
+    // - Automatically iterate over all three parts
+    // - Adjust to make it clearer that negative int is example
+    // - Create nice output print function, printing part and whether it is example or actual
+    // - Create template for a joint function that solves all 3
+
     let input_str = util::read_input(-1);
     println!("{}", run_part1(input_str));
 
