@@ -1,5 +1,5 @@
-use itertools::Itertools;
 use everybody_codes_util as util;
+use itertools::Itertools;
 
 fn run_part1<'a>(input_str: Vec<String>) -> String {
     let mut nr_potions = 0;
