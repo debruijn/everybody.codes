@@ -1,6 +1,4 @@
-use itertools::Itertools;
-
-mod util;
+use everybody_codes_util as util;
 
 fn run_part1(input_str: Vec<String>) -> String {
     let res = input_str;
