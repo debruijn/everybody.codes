@@ -1,8 +1,7 @@
 [package]
-name = "everybody_codes_2024_01"
+name = "everybody_codes_util"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
 itertools = "0.13.0"
-everybody_codes_util = { path = "../../util"}
