@@ -6,3 +6,6 @@ edition = "2021"
 [dependencies]
 itertools = "0.13.0"
 everybody_codes_util = { path = "../../util"}
+
+[profile.dev]
+opt-level = 3
