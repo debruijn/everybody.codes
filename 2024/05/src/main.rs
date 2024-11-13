@@ -1,9 +1,16 @@
-use itertools::Itertools;
-use everybody_codes_util as util;
 use counter::Counter;
+use everybody_codes_util as util;
+use itertools::Itertools;
 
 fn process_input(input_str: Vec<String>) -> Vec<Vec<usize>> {
-    let first_pass = input_str.iter().map(|x| x.split(' ').map(|y| y.parse::<usize>().unwrap()).collect_vec()).collect_vec();
+    let first_pass = input_str
+        .iter()
+        .map(|x| {
+            x.split(' ')
+                .map(|y| y.parse::<usize>().unwrap())
+                .collect_vec()
+        })
+        .collect_vec();
     let mut second_pass: Vec<Vec<usize>> = Vec::new();
 
     for _ in first_pass[0].iter() {
@@ -74,7 +81,7 @@ fn run_part2(input_str: Vec<String>) -> String {
         counter[&this_shout] += 1;
         clap_col = next_col;
         if counter[&this_shout] == 2024 {
-            return (this_shout.parse::<usize>().unwrap() * counter.total::<usize>()).to_string()
+            return (this_shout.parse::<usize>().unwrap() * counter.total::<usize>()).to_string();
         }
     }
 }
@@ -87,7 +94,7 @@ fn run_part3(input_str: Vec<String>) -> String {
     let mut pattern = process_input(input_str);
     let mut max_shout = 0;
     let mut clap_col: usize = 0;
-    let nr_rounds = 10000;  // First did way more, but this was enough for my data
+    let nr_rounds = 10000; // First did way more, but this was enough for my data
 
     for _ in 0..nr_rounds {
         let next_col = (clap_col + 1) % pattern.len();
