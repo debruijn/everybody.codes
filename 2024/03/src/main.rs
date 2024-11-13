@@ -1,6 +1,6 @@
-use std::collections::HashMap;
-use itertools::Itertools;
 use everybody_codes_util as util;
+use itertools::Itertools;
+use std::collections::HashMap;
 
 fn process_input(input_str: Vec<String>) -> HashMap<(isize, isize), isize> {
     let mut locs = HashMap::new();
@@ -14,51 +14,28 @@ fn process_input(input_str: Vec<String>) -> HashMap<(isize, isize), isize> {
     locs
 }
 
-fn run_part1(input_str: Vec<String>) -> String {
-    let mut grid = process_input(input_str);
-    let mut curr_sum = grid.values().sum::<isize>();
-    let mut old_sum = 0;
-    let mut depth = 0;
-    while old_sum != curr_sum {
-        depth += 1;
-        old_sum = curr_sum;
-        grid = take_step(grid, depth, 1);
-        curr_sum = grid.values().sum::<isize>();
-    }
-
-    grid.values().sum::<isize>().to_string()
-}
-
-fn run_part2(input_str: Vec<String>) -> String {
-    let mut grid = process_input(input_str);
-    let mut curr_sum = grid.values().sum::<isize>();
-    let mut old_sum = 0;
-    let mut depth = 0;
-    while old_sum != curr_sum {
-        depth += 1;
-        old_sum = curr_sum;
-        grid = take_step(grid, depth, 2);
-        curr_sum = grid.values().sum::<isize>();
-    }
-
-    grid.values().sum::<isize>().to_string()
-}
-
-fn take_step(mut grid: HashMap<(isize, isize), isize>, depth: isize, part: isize) -> HashMap<(isize, isize), isize> { // depth: what we have now
+fn take_step(
+    mut grid: HashMap<(isize, isize), isize>,
+    depth: isize,
+    part: isize,
+) -> HashMap<(isize, isize), isize> {
     'el_loop: for el in grid.clone().iter() {
-        let mut others = vec!((el.0.0 - 1, el.0.1),
-                          (el.0.0 + 1, el.0.1),
-                          (el.0.0, el.0.1 - 1),
-                          (el.0.0, el.0.1 + 1));
+        let mut others = vec![
+            (el.0 .0 - 1, el.0 .1),
+            (el.0 .0 + 1, el.0 .1),
+            (el.0 .0, el.0 .1 - 1),
+            (el.0 .0, el.0 .1 + 1),
+        ];
         if part == 3 {
-            others.extend(vec!(
-            (el.0.0 - 1, el.0.1 - 1),
-            (el.0.0 + 1, el.0.1 + 1),
-            (el.0.0 + 1, el.0.1 - 1),
-            (el.0.0 - 1, el.0.1 + 1)));
+            others.extend(vec![
+                (el.0 .0 - 1, el.0 .1 - 1),
+                (el.0 .0 + 1, el.0 .1 + 1),
+                (el.0 .0 + 1, el.0 .1 - 1),
+                (el.0 .0 - 1, el.0 .1 + 1),
+            ]);
         }
         if el.1 < &depth {
-            continue
+            continue;
         }
         for other in others {
             if !grid.keys().contains(&other) {
@@ -73,6 +50,33 @@ fn take_step(mut grid: HashMap<(isize, isize), isize>, depth: isize, part: isize
     grid
 }
 
+fn run_part1(input_str: Vec<String>) -> String {
+    let mut grid = process_input(input_str);
+    let mut curr_sum = grid.values().sum::<isize>();
+    let mut old_sum = 0;
+    let mut depth = 0;
+    while old_sum != curr_sum {
+        depth += 1;
+        old_sum = curr_sum;
+        grid = take_step(grid, depth, 1);
+        curr_sum = grid.values().sum::<isize>();
+    }
+    grid.values().sum::<isize>().to_string()
+}
+
+fn run_part2(input_str: Vec<String>) -> String {
+    let mut grid = process_input(input_str);
+    let mut curr_sum = grid.values().sum::<isize>();
+    let mut old_sum = 0;
+    let mut depth = 0;
+    while old_sum != curr_sum {
+        depth += 1;
+        old_sum = curr_sum;
+        grid = take_step(grid, depth, 2);
+        curr_sum = grid.values().sum::<isize>();
+    }
+    grid.values().sum::<isize>().to_string()
+}
 
 fn run_part3<'a>(input_str: Vec<String>) -> String {
     let mut grid = process_input(input_str);
@@ -85,10 +89,8 @@ fn run_part3<'a>(input_str: Vec<String>) -> String {
         grid = take_step(grid, depth, 3);
         curr_sum = grid.values().sum::<isize>();
     }
-
     grid.values().sum::<isize>().to_string()
 }
-
 
 fn run_all(input_str: Vec<String>, part: isize) -> String {
     let mut grid = process_input(input_str);
@@ -101,10 +103,8 @@ fn run_all(input_str: Vec<String>, part: isize) -> String {
         grid = take_step(grid, depth, part);
         curr_sum = grid.values().sum::<isize>();
     }
-
     grid.values().sum::<isize>().to_string()
 }
-
 
 fn main() {
     // Initial solutions: dedicated function per part
