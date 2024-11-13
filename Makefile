@@ -1,4 +1,4 @@
-DAY=02
+DAY=03
 YEAR=2024
 N_EXAMPLES=3
 
@@ -23,7 +23,6 @@ add_empty_data_files:
 
 create: create_day_folder add_empty_example_files add_empty_data_files
 	cp template/Cargo.toml ${YEAR}/${DAY}/Cargo.toml
-	cp template/src/util.rs ${YEAR}/${DAY}/src/util.rs
 	cp template/src/main.rs ${YEAR}/${DAY}/src/main.rs
 	sed -i 's/_dayxx/_${YEAR}_${DAY}/g' ${YEAR}/${DAY}/Cargo.toml
 	sed -i 's|../util|../../util|g' ${YEAR}/${DAY}/Cargo.toml
