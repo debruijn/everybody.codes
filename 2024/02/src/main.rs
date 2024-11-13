@@ -155,19 +155,22 @@ fn run_part3<'a>(input_str: Vec<String>) -> String {
             }
         }
     }
-
     inds.len().to_string()
 }
 
-
 fn run_all<'a>(input_str: Vec<String>, part: isize) -> String {
-    let mut words = input_str[0][6..].split(',').map(|x| x.to_string()).collect_vec();
-    let rev_words = input_str[0][6..].split(',').map(|x| x.chars().rev().collect::<String>()).collect_vec();
+    let mut words = input_str[0][6..]
+        .split(',')
+        .map(|x| x.to_string())
+        .collect_vec();
+    let rev_words = input_str[0][6..]
+        .split(',')
+        .map(|x| x.chars().rev().collect::<String>())
+        .collect_vec();
     words.extend(rev_words);
 
-    let mut inds = HashSet::new();
-
     let input_transposed = transpose(input_str[2..].iter().collect_vec());
+    let mut inds = HashSet::new();
 
     for (h, txt) in input_str[2..].iter().enumerate() {
         for word in words.clone().into_iter() {
@@ -198,7 +201,6 @@ fn run_all<'a>(input_str: Vec<String>, part: isize) -> String {
             }
         }
     }
-
     inds.len().to_string()
 }
 
@@ -232,11 +234,4 @@ fn main() {
 
     let input_str = util::read_input(3);
     println!("{}", run_all(input_str, 3));
-
-
-    //  Cleanup part 3:
-    // - vertical removal of loop-around
-    // - repeated calls to same calc -> separate func
-    // - vertical and horizontal as well -> call same func for indices
-    // - part 2 as special case of part 3 (and perhaps part 1 as well)
 }
