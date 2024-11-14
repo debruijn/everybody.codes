@@ -1,18 +1,26 @@
-use std::collections::{HashMap, HashSet};
 use counter::Counter;
-use itertools::Itertools;
 use everybody_codes_util as util;
+use itertools::Itertools;
+use std::collections::{HashMap, HashSet};
 
 fn process_input(input_str: Vec<String>) -> HashMap<String, Vec<isize>> {
     let mut this_map = HashMap::new();
     for row in input_str.iter() {
         let (key, val) = row.split(":").collect_tuple().unwrap();
-        this_map.insert(key.to_string(), val.split(',').map(|x| match x {
-            "+" => 1,
-            "-" => -1,
-            "=" => 0,
-            _ => {println!("Should not happen"); 0}
-        }).collect_vec());
+        this_map.insert(
+            key.to_string(),
+            val.split(',')
+                .map(|x| match x {
+                    "+" => 1,
+                    "-" => -1,
+                    "=" => 0,
+                    _ => {
+                        println!("Should not happen");
+                        0
+                    }
+                })
+                .collect_vec(),
+        );
     }
     this_map
 }
@@ -31,9 +39,13 @@ fn apply_procedure(steps: &Vec<isize>, nr_steps: isize) -> isize {
 
 fn run_part1(input_str: Vec<String>) -> String {
     let res = process_input(input_str);
-    let res = res.iter().map(
-        |x| (x.0, apply_procedure(x.1, 10))).
-        sorted_by_key(|x| x.1).map(|x| x.0).rev().join("");
+    let res = res
+        .iter()
+        .map(|x| (x.0, apply_procedure(x.1, 10)))
+        .sorted_by_key(|x| x.1)
+        .map(|x| x.0)
+        .rev()
+        .join("");
     res
 }
 
@@ -43,7 +55,10 @@ fn get_num(el: char) -> isize {
         '=' => 0,
         '+' => 1,
         '-' => -1,
-        _ => {println!("Should not happen"); 0}
+        _ => {
+            println!("Should not happen");
+            0
+        }
     }
 }
 
@@ -53,13 +68,20 @@ fn process_track(race_str: Vec<String>) -> Vec<isize> {
     for el in race_str[0].chars().skip(1) {
         res.push(get_num(el));
     }
-    for el in race_str[1..dims.0-1].iter().map(|x| x.chars().last().unwrap()) {
+    for el in race_str[1..dims.0 - 1]
+        .iter()
+        .map(|x| x.chars().last().unwrap())
+    {
         res.push(get_num(el));
     }
-    for el in race_str[dims.0-1].chars().rev() {
+    for el in race_str[dims.0 - 1].chars().rev() {
         res.push(get_num(el));
     }
-    for el in race_str[1..dims.0-1].iter().map(|x| x.chars().nth(0).unwrap()).rev() {
+    for el in race_str[1..dims.0 - 1]
+        .iter()
+        .map(|x| x.chars().nth(0).unwrap())
+        .rev()
+    {
         res.push(get_num(el));
     }
     res.push(0);
@@ -88,17 +110,23 @@ fn run_track(steps: &Vec<isize>, track: &Vec<isize>, nr_loops: isize) -> isize {
 fn run_part2(input_str: Vec<String>, race_str: Vec<String>) -> String {
     let res = process_input(input_str);
     let track = process_track(race_str);
-    let res = res.iter().map(
-        |x| (x.0, run_track(x.1, &track.clone(), 10))).
-        sorted_by_key(|x| x.1).map(|x| x.0).rev().join("");
+    let res = res
+        .iter()
+        .map(|x| (x.0, run_track(x.1, &track.clone(), 10)))
+        .sorted_by_key(|x| x.1)
+        .map(|x| x.0)
+        .rev()
+        .join("");
     res
 }
 
 fn get_cands(curr: (isize, isize)) -> Vec<(isize, isize)> {
-    let cands = vec!((curr.0, curr.1+1),
-                         (curr.0, curr.1-1),
-                         (curr.0+1, curr.1),
-                         (curr.0-1, curr.1));
+    let cands = vec![
+        (curr.0, curr.1 + 1),
+        (curr.0, curr.1 - 1),
+        (curr.0 + 1, curr.1),
+        (curr.0 - 1, curr.1),
+    ];
     cands
 }
 
@@ -112,16 +140,27 @@ fn process_advanced_track(race_str: Vec<String>) -> Vec<isize> {
     'while_lab: while !stop {
         hist.insert(curr);
         for cand in get_cands(curr) {
-            if cand.0 >= dims.0 as isize {continue}
-            if cand.0 < 0 {continue}
-            if cand.1 >= race_str[cand.0 as usize].len() as isize {continue}
-            if cand.1 < 0 {continue}
+            if cand.0 >= dims.0 as isize {
+                continue;
+            }
+            if cand.0 < 0 {
+                continue;
+            }
+            if cand.1 >= race_str[cand.0 as usize].len() as isize {
+                continue;
+            }
+            if cand.1 < 0 {
+                continue;
+            }
             if !hist.contains(&cand) {
-                let el = race_str[cand.0 as usize].chars().nth(cand.1 as usize).unwrap_or(' ');
+                let el = race_str[cand.0 as usize]
+                    .chars()
+                    .nth(cand.1 as usize)
+                    .unwrap_or(' ');
                 if el != ' ' {
                     curr = cand;
                     res.push(get_num(el));
-                    continue 'while_lab
+                    continue 'while_lab;
                 }
             }
         }
@@ -131,15 +170,14 @@ fn process_advanced_track(race_str: Vec<String>) -> Vec<isize> {
     res
 }
 
-
 fn get_options(options: Counter<isize, isize>) -> Vec<Vec<isize>> {
     if options.total::<isize>() == 1 {
-        return vec!(vec!(options.most_common_ordered()[0].0));
+        return vec![vec![options.most_common_ordered()[0].0]];
     };
     let mut this_vec = Vec::new();
     for this in options.keys() {
         if options[this] <= 0 {
-            continue
+            continue;
         }
         let mut this_counter = options.clone();
         this_counter[this] -= 1;
@@ -154,23 +192,27 @@ fn get_options(options: Counter<isize, isize>) -> Vec<Vec<isize>> {
     this_vec
 }
 
-
 fn run_part3(input_str: Vec<String>, race_str: Vec<String>) -> String {
-    let rival =  process_input(input_str);
+    let rival = process_input(input_str);
     let track = process_advanced_track(race_str);
     let rival_count = run_track(rival.get("A").unwrap(), &track, 2024);
-    let options: Vec<isize> = vec!(1,1,1,1,1,0,0,0,-1,-1,-1);
+    let options: Vec<isize> = vec![1, 1, 1, 1, 1, 0, 0, 0, -1, -1, -1];
 
     let mut count_win = 0;
 
-    let options_counter = options.clone().into_iter().collect::<Counter<isize,isize>>();
+    let options_counter = options
+        .clone()
+        .into_iter()
+        .collect::<Counter<isize, isize>>();
     let iter_opt = get_options(options_counter);
     // Or: let iter_opt = options.iter().permutations(11).unique();
 
     for this_opt in iter_opt {
         let this: Vec<isize> = this_opt.into_iter().map(|x| x.clone()).collect_vec();
         let this_count = run_track(&this, &track, 2024);
-        if this_count > rival_count {count_win+=1}
+        if this_count > rival_count {
+            count_win += 1
+        }
     }
 
     println!("Rival: {}", rival_count);
@@ -205,5 +247,4 @@ fn main() {
     let input_str = util::read_input(4);
     let race_str = util::read_input(5);
     println!("Actual: {}\n", run_part3(input_str, race_str));
-
 }
