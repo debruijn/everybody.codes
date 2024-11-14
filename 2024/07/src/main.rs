@@ -220,12 +220,6 @@ fn run_part3(input_str: Vec<String>, race_str: Vec<String>) -> String {
 }
 
 fn main() {
-    // Plan:
-    // - Automatically iterate over all three parts
-    // - Adjust to make it clearer that negative int is example
-    // - Create nice output print function, printing part and whether it is example or actual
-    // - Create template for a joint function that solves all 3
-
     // Part 1: example and actual
     println!("Part 1");
     let input_str = util::read_input(-1);
