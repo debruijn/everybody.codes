@@ -5,61 +5,56 @@ fn process_input(input_str: Vec<String>) -> isize {
 }
 
 fn run_part1(input_str: Vec<String>) -> String {
-    let res = process_input(input_str);
+    let notes = process_input(input_str);
     let mut cum_sum = 0;
-    let mut stop = false;
     let mut i = 0;
-    while !stop {
+    let mut width;
+    loop {
         i += 1;
-        cum_sum += 2 * i - 1;
-        if cum_sum >= res {
-            stop = true;
+        width = 2 * i - 1;
+        cum_sum += width;
+        if cum_sum >= notes {
+            break
         }
     }
-    let diff = cum_sum - res;
-    let layer = 2 * i - 1;
-
-    (diff * layer).to_string()
+    ((cum_sum - notes) * width).to_string()
 }
 
 fn run_part2(input_str: Vec<String>, nr_acolytes: isize, nr_blocks: isize) -> String {
-    let res = process_input(input_str);
+    let notes = process_input(input_str);
     let mut cum_sum = 0;
-    let mut stop = false;
     let mut i = 0;
     let mut thickness = 1;
-    while !stop {
+    let mut width;
+    loop {
         i += 1;
+        width = 2 * i - 1;
         thickness = if i == 1 {
             1
         } else {
-            (thickness * res) % nr_acolytes
+            (thickness * notes) % nr_acolytes
         };
-        cum_sum += (2 * i - 1) * thickness;
+        cum_sum += width * thickness;
         if cum_sum >= nr_blocks {
-            stop = true;
+            break
         }
     }
-    let diff = cum_sum - nr_blocks;
-    let layer = 2 * i - 1;
-
-    (diff * layer).to_string()
+    ((cum_sum - nr_blocks) * width).to_string()
 }
 
 fn run_part3(input_str: Vec<String>, nr_acolytes: isize, nr_blocks: isize) -> String {
-    let res = process_input(input_str);
-    let mut stop = false;
+    let notes = process_input(input_str);
     let mut i = 0;
     let mut thickness = 1;
     let mut heights = Vec::new();
-    let mut this_sum = 0;
-    let mut to_remove = 0;
-    while !stop {
+    let mut this_sum;
+    let mut to_remove ;
+    loop {
         i += 1;
         thickness = if i == 1 {
             1
         } else {
-            ((thickness * res) % nr_acolytes) + nr_acolytes
+            ((thickness * notes) % nr_acolytes) + nr_acolytes
         };
         for i in 0..heights.len() {
             heights[i] += thickness
@@ -70,15 +65,15 @@ fn run_part3(input_str: Vec<String>, nr_acolytes: isize, nr_blocks: isize) -> St
         to_remove = if i == 1 {
             0
         } else {
-            (heights[0] * width * res) % nr_acolytes
+            (heights[0] * width * notes) % nr_acolytes
         };
         for i in 1..heights.len() - 1 {
-            to_remove += 2 * ((heights[i] * width * res) % nr_acolytes);
+            to_remove += 2 * ((heights[i] * width * notes) % nr_acolytes);
         }
 
         this_sum = heights[0] + heights.iter().skip(1).sum::<isize>() * 2;
         if this_sum - to_remove >= nr_blocks {
-            stop = true
+            break
         }
     }
     let diff = this_sum - to_remove - nr_blocks;
