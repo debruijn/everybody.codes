@@ -1,4 +1,5 @@
 use std::collections::{HashMap, HashSet};
+use counter::Counter;
 use itertools::Itertools;
 use everybody_codes_util as util;
 
@@ -130,15 +131,43 @@ fn process_advanced_track(race_str: Vec<String>) -> Vec<isize> {
     res
 }
 
+
+fn get_options(options: Counter<isize, isize>) -> Vec<Vec<isize>> {
+    if options.total::<isize>() == 1 {
+        return vec!(vec!(options.most_common_ordered()[0].0));
+    };
+    let mut this_vec = Vec::new();
+    for this in options.keys() {
+        if options[this] <= 0 {
+            continue
+        }
+        let mut this_counter = options.clone();
+        this_counter[this] -= 1;
+        let mut this_res = get_options(this_counter);
+        for i in 0..this_res.len() {
+            let mut i_res = this_res[i].clone();
+            i_res.push(*this);
+            this_res[i] = i_res;
+        }
+        this_vec.extend(this_res)
+    }
+    this_vec
+}
+
+
 fn run_part3(input_str: Vec<String>, race_str: Vec<String>) -> String {
     let rival =  process_input(input_str);
     let track = process_advanced_track(race_str);
-    // Count score rival
     let rival_count = run_track(rival.get("A").unwrap(), &track, 2024);
-    // Loop over all options (itertools?) and note number of winnings
     let options: Vec<isize> = vec!(1,1,1,1,1,0,0,0,-1,-1,-1);
+
     let mut count_win = 0;
-    for this_opt in options.iter().permutations(11).unique() {
+
+    let options_counter = options.clone().into_iter().collect::<Counter<isize,isize>>();
+    let iter_opt = get_options(options_counter);
+    // Or: let iter_opt = options.iter().permutations(11).unique();
+
+    for this_opt in iter_opt {
         let this: Vec<isize> = this_opt.into_iter().map(|x| x.clone()).collect_vec();
         let this_count = run_track(&this, &track, 2024);
         if this_count > rival_count {count_win+=1}
