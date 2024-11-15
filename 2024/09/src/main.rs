@@ -64,7 +64,7 @@ fn run_part3(input_str: Vec<String>) -> String {
 }
 
 fn main() {
-    // Part 1: example and actual 8722 8713 5585 5168 5165 5160 150495 150498 150496 150494 150493
+    // Part 1: example and actual
     println!("Part 1");
     let input_str = util::read_input(-1);
     println!("Example: {}", run_part1(input_str));
