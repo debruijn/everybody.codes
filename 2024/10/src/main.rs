@@ -78,7 +78,6 @@ fn grid_to_puzzle(input_str: &Vec<String>, i: usize, j: usize, step: usize) -> V
     this_string
 }
 
-
 fn run_part1(input_str: Vec<String>) -> String {
     get_runic_word(input_str)
 }
@@ -100,7 +99,7 @@ fn get_runic_word_with_marks(mut input_str: Vec<String>) -> Vec<String> {
     let func_input = input_str.clone();
     let transposed_str = transpose(&input_str);
     let mut res = [['?'; 4]; 4];
-    let mut mark_locs = Vec::new();  // mark the locations with a ?
+    let mut mark_locs = Vec::new(); // mark the locations with a ?
 
     // First: normal solve as much as possible but mark question marks
     for i in 2..6 {
@@ -132,8 +131,7 @@ fn get_runic_word_with_marks(mut input_str: Vec<String>) -> Vec<String> {
             } else {
                 &'?'
             };
-            if !res.iter().any(|x| x.contains(new))
-            {
+            if !res.iter().any(|x| x.contains(new)) {
                 input_str[loc.0] = input_str[loc.0].replace('?', &new.to_string());
             }
         } else if outer_col.contains(&'?') && outer_col.len() >= 4 {
@@ -154,8 +152,7 @@ fn get_runic_word_with_marks(mut input_str: Vec<String>) -> Vec<String> {
         }
     }
     // ONLY return updated input_str if fully solved (this assumption I missed for a long time)
-    if !input_str.iter().any(|x| x.contains('?'))
-    {
+    if !input_str.iter().any(|x| x.contains('?')) {
         input_str
     } else {
         func_input
@@ -190,7 +187,7 @@ fn run_part3(mut input_str: Vec<String>, example: bool) -> String {
             .map(|x| x.chars().filter(|y| y == &'?').count())
             .sum();
         if new_marks == total_marks {
-            break
+            break;
         } else {
             total_marks = new_marks
         }
