@@ -5,8 +5,8 @@ use std::collections::HashMap;
 fn process_input(input_str: Vec<String>) -> HashMap<(isize, isize), isize> {
     let mut locs = HashMap::new();
     for (i, row) in input_str.iter().enumerate() {
-        for (j, el) in row.chars().enumerate() {
-            if el == '#' {
+        for (j, el) in row.bytes().enumerate() {
+            if el == b'#' {
                 locs.insert((i as isize, j as isize), 1isize);
             }
         }
