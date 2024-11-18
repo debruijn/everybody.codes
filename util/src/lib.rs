@@ -1,3 +1,5 @@
+pub mod grid;
+
 use itertools::Itertools;
 use std::fs;
 
