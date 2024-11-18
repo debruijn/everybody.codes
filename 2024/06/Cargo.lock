@@ -37,6 +37,7 @@ name = "everybody_codes_util"
 version = "0.1.0"
 dependencies = [
  "itertools",
+ "num-traits",
 ]
 
 [[package]]
