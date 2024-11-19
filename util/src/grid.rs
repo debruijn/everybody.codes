@@ -22,7 +22,7 @@
 // - dist
 // -
 
-use num_traits::{One, Pow, PrimInt, Zero};
+use num_traits::{One, Pow, PrimInt, ToPrimitive, Zero};
 use std::{
     fmt::Display,
     ops::{Add, Div, Mul, Sub},
@@ -117,6 +117,22 @@ impl<T: Point1D, const N: usize> Point<T, N> {
         self.euclidean_dist_sq(rhs).to_f64().unwrap().pow(0.5)
     }
 
+    pub fn gen_dist_sq(self, rhs: Self, pow: u32) -> T {
+        let mut sum: T = T::zero();
+        for idx in 0..N {
+            sum = sum + if self.0[idx] > rhs.0[idx] {
+                (self.0[idx] - rhs.0[idx]).pow(pow)
+            } else {
+                (rhs.0[idx] - self.0[idx]).pow(pow)
+            };
+        }
+        sum
+    }
+
+    pub fn gen_dist(self, rhs: Self, pow: u32) -> f64 {
+        self.gen_dist_sq(rhs, pow).to_f64().unwrap().pow(1.0 / (pow.to_f64().unwrap()))
+    }
+
 }
 
 impl<T: Point1D, const N: usize> Add for Point<T, N> {
@@ -167,6 +183,46 @@ impl<T: Point1D, const N: usize> Mul for Point<T, N> {
     }
 }
 
+pub trait Gridlike: Default + PrimInt + Display + Zero + One + Mul {}
+
+impl<T> Gridlike for T where T: Default + PrimInt + Display + Zero + One + Mul {}
+
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+// pub struct Grid<T: Point1D, const N: usize, const P: usize>([Point<T, N>; P]);
+pub struct Grid<T, const P: usize, const Q: usize>([[T; P];Q]);
+
+impl<T, const N: usize, const P: usize> Grid<T, N, P>
+where T: Zero + Copy {
+
+    pub fn new() -> Self {  // Make a new empty Grid
+        Grid([[T::zero();N];P])
+    }
+
+
+
+    // pub fn from() -> Self {} // Make a new Grid from input Vec<&str>
+
+    // pub fn from_map() -> Self {} // Make a new Grid, transforming input to nums using a map
+
+    // pub fn set_elements() {} // For an existing Grid, update elements by index
+
+    // pub fn get_neighbors() {} // Return Array of 4 points that are the direct neighbors, incl Nil point if outside range
+
+    // pub fn get_neighbors_custom() {} // Above but with bools for: diagonal or not; include_self or not (needs to be Vec, or split up to arrays)
+
+
+    // pub fn set() // Individual set
+
+    // pub fn get() // Individual get
+
+    // pub fn count(key) // Count occurence with key
+
+    // pub fn get(key) // Get all indices with a particular key
+
+}
+
+
 #[test]
 fn math_operations() {
     // signed 2d  TODO Convert to actual test
@@ -186,5 +242,6 @@ fn math_operations() {
     pt1.mul_num_inplace(2);
     println!("{:?}", pt1);
 
-    println!("{}, {}, {}", pt1.manhattan_dist(pt2), pt1.euclidean_dist_sq(pt2), pt1.euclidean_dist(pt2))
+    println!("{}, {}, {}, {}, {}", pt1.manhattan_dist(pt2), pt1.euclidean_dist_sq(pt2),
+             pt1.euclidean_dist(pt2), pt1.gen_dist_sq(pt2, 2), pt1.gen_dist(pt2, 1))
 }
