@@ -13,73 +13,58 @@ fn run_part2(input_str: Vec<&str>) -> String {
 fn run_process(input_str: &Vec<&str>, start: &str, n_days: usize) -> usize {
     let mut map: HashMap<&str, Vec<&str>> = HashMap::new();
     for row in input_str {
-        let (key, val) = row.split(':').collect_tuple().unwrap();
+        let (key, val) = row.split_once(':').unwrap();
         let val: Vec<&str> = val.split(',').collect_vec();
         map.insert(key, val);
     }
     let mut curr: Counter<&&str, usize> = Counter::new();
     curr += [&start; 1];
-
+    let mut new: Counter<&&str, usize> = Counter::new();
     for _ in 0..n_days {
-        let mut new: Counter<&&str, usize> = Counter::new();
-        for (k, v) in curr.iter() {
+        for (k, v) in curr.drain() {
             let this: Counter<&&str, usize> = Counter::from_iter(&map[*k]);
             for k2 in this.keys() {
                 new[k2] += &this[k2] * v
             }
         }
-        curr = new;
+        (curr, new) = (new, curr);
     }
-
-    let res: usize = curr.total();
-    res
+    curr.total()
 }
 
 fn run_process_string(input_str: &Vec<&str>, start: &str, n_days: usize) -> usize {
     let mut map_counter: HashMap<String, Counter<String, usize>> = HashMap::new();
     for row in input_str {
-        let (key, val) = row.split(':').collect_tuple().unwrap();
+        let (key, val) = row.split_once(':').unwrap();
         let val: Vec<String> = val.split(',').map(|x| x.to_string()).collect_vec();
         map_counter.insert(key.to_string(), Counter::from_iter(val));
     }
     let mut curr: Counter<String, usize> = Counter::new();
     curr += [start.to_string(); 1];
+    let mut new: Counter<String, usize> = Counter::new();
 
     for _ in 0..n_days {
-        let mut new: Counter<String, usize> = Counter::new();
-        for (k, v) in curr.iter() {
-            let this: Counter<String, usize> = map_counter[k].clone();
-            for (k2, v2) in this.iter() {
+        for (k, v) in curr.drain() {
+            for (k2, v2) in map_counter[&k].iter() {
                 new[k2] += v2 * v;
             }
         }
-        curr = new;
+        (curr, new) = (new, curr);
     }
-
-    let res: usize = curr.total();
-    res
+    curr.total()
 }
 
 fn run_part3(input_str: Vec<&str>) -> String {
-    let input_clone = input_str.clone();
     let keys: Vec<&str> = input_str
         .iter()
         .map(|x| x.split(':').collect_vec()[0])
         .collect_vec();
 
-    let first = run_process_string(&input_clone, keys[0], 20);
-    let mut min = first;
-    let mut max = first;
-
-    for key in keys.iter().skip(1) {
-        let this = run_process(&input_clone, key, 20);
-        if this < min {
-            min = this
-        }
-        if this > max {
-            max = this
-        }
-    }
+    let populations = keys.iter()
+        .map(|key| run_process_string(&input_str, key, 20))
+        .collect_vec();
+    let max = populations.iter().max().unwrap();
+    let min = populations.iter().min().unwrap();
 
     (max - min).to_string()
 }
