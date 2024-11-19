@@ -9,4 +9,4 @@ everybody_codes_util = { path = "../../util"}
 counter = "0.6.0"
 
 [profile.dev]
-opt-level = 0
+opt-level = 3
