@@ -22,12 +22,14 @@
 // - dist
 // -
 
+use itertools::Itertools;
 use num_traits::{One, Pow, PrimInt, ToPrimitive, Zero};
+use std::collections::HashMap;
+use std::fmt::Debug;
 use std::{
     fmt::Display,
     ops::{Add, Div, Mul, Sub},
 };
-
 // TODO: could make utility impls for 2d and 3d situations, incl getting data quickly with x, y, z
 
 pub trait Point1D: Default + PrimInt + Display + Zero + One + Mul {}
@@ -92,11 +94,12 @@ impl<T: Point1D, const N: usize> Point<T, N> {
     pub fn manhattan_dist(self, rhs: Self) -> T {
         let mut sum: T = T::zero();
         for idx in 0..N {
-            sum = sum + if self.0[idx] > rhs.0[idx] {
-                self.0[idx] - rhs.0[idx]
-            } else {
-                rhs.0[idx] - self.0[idx]
-            };
+            sum = sum
+                + if self.0[idx] > rhs.0[idx] {
+                    self.0[idx] - rhs.0[idx]
+                } else {
+                    rhs.0[idx] - self.0[idx]
+                };
         }
         sum
     }
@@ -104,11 +107,12 @@ impl<T: Point1D, const N: usize> Point<T, N> {
     pub fn euclidean_dist_sq(self, rhs: Self) -> T {
         let mut sum: T = T::zero();
         for idx in 0..N {
-            sum = sum + if self.0[idx] > rhs.0[idx] {
-                (self.0[idx] - rhs.0[idx]).pow(2)
-            } else {
-                (rhs.0[idx] - self.0[idx]).pow(2)
-            };
+            sum = sum
+                + if self.0[idx] > rhs.0[idx] {
+                    (self.0[idx] - rhs.0[idx]).pow(2)
+                } else {
+                    (rhs.0[idx] - self.0[idx]).pow(2)
+                };
         }
         sum
     }
@@ -120,19 +124,22 @@ impl<T: Point1D, const N: usize> Point<T, N> {
     pub fn gen_dist_sq(self, rhs: Self, pow: u32) -> T {
         let mut sum: T = T::zero();
         for idx in 0..N {
-            sum = sum + if self.0[idx] > rhs.0[idx] {
-                (self.0[idx] - rhs.0[idx]).pow(pow)
-            } else {
-                (rhs.0[idx] - self.0[idx]).pow(pow)
-            };
+            sum = sum
+                + if self.0[idx] > rhs.0[idx] {
+                    (self.0[idx] - rhs.0[idx]).pow(pow)
+                } else {
+                    (rhs.0[idx] - self.0[idx]).pow(pow)
+                };
         }
         sum
     }
 
     pub fn gen_dist(self, rhs: Self, pow: u32) -> f64 {
-        self.gen_dist_sq(rhs, pow).to_f64().unwrap().pow(1.0 / (pow.to_f64().unwrap()))
+        self.gen_dist_sq(rhs, pow)
+            .to_f64()
+            .unwrap()
+            .pow(1.0 / (pow.to_f64().unwrap()))
     }
-
 }
 
 impl<T: Point1D, const N: usize> Add for Point<T, N> {
@@ -187,41 +194,144 @@ pub trait Gridlike: Default + PrimInt + Display + Zero + One + Mul {}
 
 impl<T> Gridlike for T where T: Default + PrimInt + Display + Zero + One + Mul {}
 
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub struct Grid<T>(Vec<Vec<T>>);
 
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-// pub struct Grid<T: Point1D, const N: usize, const P: usize>([Point<T, N>; P]);
-pub struct Grid<T, const P: usize, const Q: usize>([[T; P];Q]);
-
-impl<T, const N: usize, const P: usize> Grid<T, N, P>
-where T: Zero + Copy {
-
-    pub fn new() -> Self {  // Make a new empty Grid
-        Grid([[T::zero();N];P])
+impl<T> Grid<T>
+where
+    T: Copy + From<u8> + Debug + PartialEq,
+{
+    pub fn new() -> Self {
+        // Make a new empty Grid
+        Grid(Vec::new())
     }
 
+    pub fn from(vec_str: Vec<&str>) -> Self {
+        // '8' -> 56 if T is u8, usize, etc
+        let vec = vec_str
+            .iter()
+            .map(|x| x.bytes().map(|y| y.try_into().unwrap()).collect_vec())
+            .collect_vec();
+        Grid(vec)
+    }
 
+    pub fn from_map(vec_str: Vec<&str>, map: HashMap<char, T>) -> Self {
+        let vec = vec_str
+            .iter()
+            .map(|x| x.chars().map(|y| map[&y]).collect_vec())
+            .collect_vec();
+        Grid(vec)
+    }
 
-    // pub fn from() -> Self {} // Make a new Grid from input Vec<&str>
+    pub fn set_elements(&mut self, elements: HashMap<Point<isize, 2>, T>) {
+        for el in elements.iter() {
+            self.0[el.0 .0[0] as usize][el.0 .0[1] as usize] = *el.1;
+        }
+    }
 
-    // pub fn from_map() -> Self {} // Make a new Grid, transforming input to nums using a map
+    pub fn set_pt(&mut self, el: T, pt: Point<isize, 2>) {
+        self.0[pt.0[0] as usize][pt.0[1] as usize] = el;
+    }
 
-    // pub fn set_elements() {} // For an existing Grid, update elements by index
+    pub fn set(&mut self, el: T, loc: (isize, isize)) {
+        self.0[loc.0 as usize][loc.1 as usize] = el;
+    }
 
-    // pub fn get_neighbors() {} // Return Array of 4 points that are the direct neighbors, incl Nil point if outside range
+    pub fn contains(&self, loc: Point<isize, 2>) -> bool {
+        if 0 > loc.0[0] || loc.0[0] >= self.0.len() as isize {
+            false
+        } else if 0 > loc.0[1] || loc.0[1] >= self.0[0].len() as isize {
+            false
+        } else {
+            true
+        }
+    }
 
-    // pub fn get_neighbors_custom() {} // Above but with bools for: diagonal or not; include_self or not (needs to be Vec, or split up to arrays)
+    pub fn get(&self, loc: (isize, isize)) -> T {
+        self.0[loc.0 as usize][loc.1 as usize]
+    }
 
+    pub fn get_pt(&self, pt: Point<isize, 2>) -> T {
+        self.0[pt.0[0] as usize][pt.0[1] as usize]
+    }
 
-    // pub fn set() // Individual set
+    pub fn get_elements(&self, pts: Vec<Point<isize, 2>>) -> Vec<T> {
+        pts.iter().map(|pt| self.get_pt(*pt)).collect_vec()
+    }
 
-    // pub fn get() // Individual get
+    // TODO: move neighbors to Point, to filter out usize vs isize
+    pub fn get_neighbors(&self, pt: Point<isize, 2>) -> [T; 4] {
+        let diffs = [Point([0, 1]), Point([1, 0]), Point([0, -1]), Point([-1, 0])];
+        diffs
+            .iter()
+            .map(|x| self.get_pt(*x + pt))
+            .collect_vec()
+            .try_into()
+            .unwrap()
+    }
 
-    // pub fn count(key) // Count occurence with key
+    pub fn get_neighbors_ok(&self, pt: Point<isize, 2>) -> Vec<(Point<isize, 2>, T)> {
+        let diffs = [Point([0, 1]), Point([1, 0]), Point([0, -1]), Point([-1, 0])];
+        let mut res = Vec::new();
+        for diff in diffs {
+            let this = pt + diff;
+            if self.contains(this) {
+                res.push((this, self.get_pt(this)))
+            }
+        }
+        res
+    }
 
-    // pub fn get(key) // Get all indices with a particular key
+    pub fn get_neighbors_options(
+        &self,
+        pt: Point<isize, 2>,
+        diag: bool,
+        incl_pt: bool,
+    ) -> Vec<(Point<isize, 2>, T)> {
+        let mut diffs = vec![Point([0, 1]), Point([1, 0]), Point([0, -1]), Point([-1, 0])];
+        if incl_pt {
+            diffs.push(Point([0, 0]));
+        }
+        if diag {
+            diffs.extend(vec![
+                Point([1, 1]),
+                Point([1, -1]),
+                Point([-1, -1]),
+                Point([-1, 1]),
+            ]);
+        }
 
+        let mut res = Vec::new();
+        for diff in diffs {
+            let this = pt + diff;
+            if self.contains(this) {
+                res.push((this, self.get_pt(this)))
+            }
+        }
+        res
+    }
+
+    pub fn count(&self, key: T) -> usize {
+        self.0
+            .iter()
+            .map(|x| x.iter().filter(|y| **y == key).count())
+            .sum()
+    }
+
+    pub fn filter_key(&self, key: T) -> Vec<Point<isize, 2>> {
+        self.0
+            .iter()
+            .enumerate()
+            .map(|x| {
+                x.1.iter()
+                    .enumerate()
+                    .filter(|y| *y.1 == key)
+                    .map(move |y| Point([x.0 as isize, y.0 as isize]))
+            })
+            .flatten()
+            .collect_vec()
+    }
 }
-
 
 #[test]
 fn math_operations() {
@@ -242,6 +352,50 @@ fn math_operations() {
     pt1.mul_num_inplace(2);
     println!("{:?}", pt1);
 
-    println!("{}, {}, {}, {}, {}", pt1.manhattan_dist(pt2), pt1.euclidean_dist_sq(pt2),
-             pt1.euclidean_dist(pt2), pt1.gen_dist_sq(pt2, 2), pt1.gen_dist(pt2, 1))
+    println!(
+        "{}, {}, {}, {}, {}",
+        pt1.manhattan_dist(pt2),
+        pt1.euclidean_dist_sq(pt2),
+        pt1.euclidean_dist(pt2),
+        pt1.gen_dist_sq(pt2, 2),
+        pt1.gen_dist(pt2, 1)
+    );
+    println!("{}", '8' as usize);
+
+    let grid: Grid<u8> = Grid::from(vec!["abcd", "efgh"]);
+    println!("{:?}", grid);
+    let grid: Grid<char> = Grid::from(vec!["abcd", "efgh"]);
+    println!("{:?}", grid);
+
+    let map: HashMap<char, u8> = "abcdefghijkl"
+        .chars()
+        .map(|x| (x, x as u8 - 'a' as u8))
+        .collect();
+    let mut grid: Grid<u8> = Grid::from_map(vec!["abcd", "efgh", "ijkl"], map);
+    println!("{:?}", grid);
+
+    let map: HashMap<Point<isize, 2>, u8> = vec![(Point([0, 1]), 12u8), (Point([1, 1]), 15)]
+        .into_iter()
+        .collect();
+    grid.set_elements(map);
+    grid.set(4, (0, 0));
+    grid.set_pt(0, Point([0, 3]));
+    println!("{:?}", grid);
+    println!("{}", grid.get((1, 1)));
+    println!("{}", grid.get_pt(Point([1, 1])));
+
+    println!("{:?}", grid.get_neighbors(Point([1, 1])));
+    println!("{:?}", grid.get_neighbors_ok(Point([1, 1])));
+    println!("{:?}", grid.get_neighbors_ok(Point([0, 1])));
+    println!(
+        "{:?}",
+        grid.get_neighbors_options(Point([0, 1]), true, false)
+    );
+    println!(
+        "{:?}",
+        grid.get_neighbors_options(Point([0, 1]), true, true)
+    );
+
+    println!("{}, {:?}", grid.count(4), grid.filter_key(4));
+    println!("{:?}", grid)
 }
