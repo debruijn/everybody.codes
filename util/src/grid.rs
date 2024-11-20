@@ -223,6 +223,15 @@ where
         Grid(vec)
     }
 
+    pub fn fill_lines(&mut self, fill: T) {
+        let max_l = self.0.iter().map(|x| x.len()).max().unwrap();
+        for row in self.0.iter_mut() {
+            if row.len() < max_l {
+                row.extend(vec!(fill).repeat(max_l - row.len()))
+            }
+        }
+    }
+
     pub fn set_elements(&mut self, elements: HashMap<Point<isize, 2>, T>) {
         for el in elements.iter() {
             self.0[el.0 .0[0] as usize][el.0 .0[1] as usize] = *el.1;
@@ -238,9 +247,9 @@ where
     }
 
     pub fn contains(&self, loc: Point<isize, 2>) -> bool {
-        if 0 > loc.0[0] || loc.0[0] >= self.0.len() as isize {
+        if (0 > loc.0[0]) || (loc.0[0] >= self.0.len() as isize) {
             false
-        } else if 0 > loc.0[1] || loc.0[1] >= self.0[0].len() as isize {
+        } else if (0 > loc.0[1]) || (loc.0[1] >= self.0[0].len() as isize) {
             false
         } else {
             true
@@ -273,8 +282,8 @@ where
     pub fn get_neighbors_ok(&self, pt: Point<isize, 2>) -> Vec<(Point<isize, 2>, T)> {
         let diffs = [Point([0, 1]), Point([1, 0]), Point([0, -1]), Point([-1, 0])];
         let mut res = Vec::new();
-        for diff in diffs {
-            let this = pt + diff;
+        for diff in diffs.iter() {
+            let this = pt + *diff;
             if self.contains(this) {
                 res.push((this, self.get_pt(this)))
             }
@@ -387,6 +396,7 @@ fn math_operations() {
     println!("{:?}", grid.get_neighbors(Point([1, 1])));
     println!("{:?}", grid.get_neighbors_ok(Point([1, 1])));
     println!("{:?}", grid.get_neighbors_ok(Point([0, 1])));
+    println!("{:?}", grid.get_neighbors_ok(Point([2, 3])));
     println!(
         "{:?}",
         grid.get_neighbors_options(Point([0, 1]), true, false)
