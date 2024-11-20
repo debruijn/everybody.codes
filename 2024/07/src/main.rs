@@ -2,6 +2,7 @@ use counter::Counter;
 use everybody_codes_util as util;
 use itertools::Itertools;
 use std::collections::{HashMap, HashSet};
+use everybody_codes_util::grid::{Grid, Point};
 
 fn process_input(input_str: Vec<String>) -> HashMap<String, Vec<isize>> {
     let mut this_map = HashMap::new();
@@ -170,6 +171,30 @@ fn process_advanced_track(race_str: Vec<String>) -> Vec<isize> {
     res
 }
 
+fn process_advanced_track_as_grid(race_str: Vec<String>) -> Vec<isize> {
+    let map: HashMap<u8, isize> = [(b'S', 0), (b'+', 1), (b'=', 0), (b'-', -1)].into_iter().collect();
+    let mut grid: Grid<u8> = Grid::from(race_str.iter().map(|x| x.as_str()).collect_vec());
+    &grid.fill_lines(b' ');
+    let mut curr = Point::new([0, 0]);
+    let mut stop = false;
+    let mut res = Vec::new();
+    'while_lab: while !stop {
+        let neighbors: Vec<(Point<isize, 2>, u8)> = grid.get_neighbors_ok(curr);
+        for (pt, val) in neighbors.iter() {
+            if *val != b' ' {
+                grid.set_pt(b' ', curr);
+                curr = *pt;
+                res.push(map[val]);
+                continue 'while_lab
+            }
+        }
+        stop = true;
+    }
+    res.push(0);
+    res
+
+}
+
 fn get_options(options: Counter<isize, isize>) -> Vec<Vec<isize>> {
     if options.total::<isize>() == 1 {
         return vec![vec![options.most_common_ordered()[0].0]];
@@ -194,7 +219,7 @@ fn get_options(options: Counter<isize, isize>) -> Vec<Vec<isize>> {
 
 fn run_part3(input_str: Vec<String>, race_str: Vec<String>) -> String {
     let rival = process_input(input_str);
-    let track = process_advanced_track(race_str);
+    let track = process_advanced_track_as_grid(race_str);
     let rival_count = run_track(rival.get("A").unwrap(), &track, 2024);
     let options: Vec<isize> = vec![1, 1, 1, 1, 1, 0, 0, 0, -1, -1, -1];
 
