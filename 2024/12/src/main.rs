@@ -53,19 +53,81 @@ fn run_part2(input_str: Vec<String>, example: bool) -> String {
     score.to_string()
 }
 
+
+fn get_meteors(input_str: Vec<String>) -> Vec<(isize, isize)> {
+    input_str
+        .iter()
+        .map(|x| {
+            let temp = x.split_once(' ').unwrap();
+            (temp.0.parse().unwrap(), temp.1.parse().unwrap())
+        })
+        .collect_vec()
+}
+
+
+fn update_hi_score(highest: isize, score: isize, y: isize, this_score: isize) -> (isize, isize) {
+    if y > highest {
+        (y, this_score)
+    } else if y == highest {
+        (highest, min(score, this_score))
+    } else {
+        (highest, score)
+    }
+}
+
+fn check_start_meteor(start: isize, meteor: &(isize, isize)) -> (isize, isize) {
+    let mut highest = -1;
+    let mut score = -1;
+
+    let (x, y) = (meteor.0 / 2, meteor.1 - (meteor.0 - meteor.0 / 2));
+
+    if y == x + start {
+        // Hits on incline
+        let this_score = x * (start + 1);
+        (highest, score) = update_hi_score(highest, score, y, this_score);
+    }
+    if x >= y - start && x <= 2 * (y - start) {
+        // Hits on flat part
+        let this_score = (y - start) * (start + 1);
+        (highest, score) = update_hi_score(highest, score, y, this_score);
+    }
+    if x >= 2 * (y - start + x) / 3 && (y - start + x) % 3 == 0 {
+        // Hits on decline
+        let this_score = (y - start + x) / 3 * (start + 1);
+        (highest, score) = update_hi_score(highest, score, y, this_score);
+    }
+    (highest, score)
+}
+
+fn run_part3_calc(input_str: Vec<String>) -> String {
+    let meteors = get_meteors(input_str);
+    let mut value = 0;
+    for meteor in meteors.iter() {
+        let mut highest = -1;
+        let mut score = -1;
+        for start in 0..3 {
+            // try all three start points
+            let (this_highest, this_score) = check_start_meteor(start, meteor);
+            (highest, score) = update_hi_score(highest, score, this_highest, this_score);
+        }
+        value += score;
+    }
+    value.to_string()
+}
+
 fn can_hit(
     mut meteor: (isize, isize),
     height: isize,
     power: isize,
     delay: isize,
 ) -> (bool, isize, isize, isize) {
+    // Utility function to determine by simulation whether a certain shot with a certain delay hits
     let mut t = 0;
     let mut proj = (height, 0);
     meteor = (meteor.1, meteor.0);
     loop {
         let diff = 1;
         t += diff;
-        // println!("{:?}, {:?}, {}", meteor, proj, t);
         if t > delay {
             if t - delay <= power {
                 proj = (proj.0 + diff, proj.1 + diff);
@@ -93,7 +155,12 @@ fn can_hit(
     }
 }
 
-fn solve_meteor(meteor: &(isize, isize), iter: usize) -> isize {
+fn sim_meteor(meteor: &(isize, isize)) -> isize {
+    // Old solution - can ignore
+    // Try to find for each `cat` (startpoint) whether it can hit the meteor, by trying all
+    // powers from 1 to 3000 and then simulating whether that can hit for various values of delay
+    // (At this point I hadn't realized that it is best to delay only for alignment purposes, so
+    // shoot at t=0 or t=1).
     let mut this_best_height = 0;
     let mut this_worst_val = 100000000;
     let mut cand_res = (0, 0, 0);
@@ -150,39 +217,29 @@ fn solve_meteor(meteor: &(isize, isize), iter: usize) -> isize {
             break;
         }
     }
-    println!("{iter}: {:?}, {}, {:?}", meteor, this_worst_val, cand_res);
     this_worst_val
 }
 
-fn run_part3(input_str: Vec<String>) -> String {
-    let meteors: Vec<(isize, isize)> = input_str
-        .iter()
-        .map(|x| {
-            let temp = x.split_once(' ').unwrap();
-            (temp.0.parse().unwrap(), temp.1.parse().unwrap())
-        })
-        .collect_vec();
-
+fn run_part3_full_sim(input_str: Vec<String>) -> String {
+    // Old solution - can ignore
+    let meteors = get_meteors(input_str);
     let mut value = 0;
-    for (iter, meteor) in meteors.iter().enumerate() {
-        let this_worst_val = solve_meteor(meteor, iter);
+    for meteor in meteors.iter() {
+        let this_worst_val = sim_meteor(meteor);
         value += this_worst_val;
     }
-
     value.to_string()
 }
 
-fn run_part3_alt(input_str: Vec<String>) -> String {
-    let meteors: Vec<(isize, isize)> = input_str
-        .iter()
-        .map(|x| {
-            let temp = x.split_once(' ').unwrap();
-            (temp.0.parse().unwrap(), temp.1.parse().unwrap())
-        })
-        .collect_vec();
-
+fn run_part3_alt_sim(input_str: Vec<String>) -> String {
+    // Old solution - can ignore
+    // Try to find for each `cat` (startpoint) whether it can hit the meteor, by trying all
+    // powers from 1 to 3000 and then simulating whether that can hit for delay=0 or delay=1
+    // (At this point I had just realized that it is best to delay only for alignment purposes, so
+    // shoot at t=0 or t=1).
+    let meteors = get_meteors(input_str);
     let mut value = 0;
-    for (iter, meteor) in meteors.iter().enumerate() {
+    for meteor in meteors.iter() {
         let mut this_best_height = 0;
         let mut this_worst_val = 100000000;
         for cat in 0..3 {
@@ -198,84 +255,16 @@ fn run_part3_alt(input_str: Vec<String>) -> String {
                         }
                     }
                 }
-                let t = try_pow - (meteor.0 - meteor.1 + cat);
-                if t >= 0 {
-                    let this_res = can_hit(*meteor, cat, try_pow, t);
-                    if this_res.0 {
-                        if this_res.1 > this_best_height {
-                            this_worst_val = try_pow * (cat + 1);
-                            this_best_height = this_res.1;
-                        } else if this_res.1 == this_best_height {
-                            this_worst_val = min(try_pow * (cat + 1), this_worst_val);
-                        }
-                    }
-                }
             }
         }
-        if this_worst_val == 100000000 {
-            this_worst_val = solve_meteor(meteor, iter);
+        if this_worst_val == 100000000 {  // Fallback to other option - not needed
+            this_worst_val = sim_meteor(meteor);
         }
         value += this_worst_val;
     }
-
     value.to_string()
 }
 
-fn update_hi_score(highest: isize, score: isize, y: isize, this_score: isize) -> (isize, isize) {
-    if y > highest {
-        (y, this_score)
-    } else if y == highest {
-        (highest, min(score, this_score))
-    } else {
-        (highest, score)
-    }
-}
-
-fn check_start_meteor(start: isize, meteor: &(isize, isize)) -> (isize, isize) {
-    let mut highest = -1;
-    let mut score = -1;
-
-    let (x, y) = (meteor.0 / 2, meteor.1 - (meteor.0 - meteor.0 / 2));
-
-    if y == x + start {
-        // Hits on incline
-        let this_score = x * (start + 1);
-        (highest, score) = update_hi_score(highest, score, y, this_score);
-    }
-    if x >= y - start && x <= 2 * (y - start) {
-        // Hits on flat part
-        let this_score = (y - start) * (start + 1);
-        (highest, score) = update_hi_score(highest, score, y, this_score);
-    }
-    if x >= 2 * (y - start + x) / 3 && (y - start + x) % 3 == 0 {
-        // Hits on decline
-        let this_score = (y - start + x) / 3 * (start + 1);
-        (highest, score) = update_hi_score(highest, score, y, this_score);
-    }
-    (highest, score)
-}
-
-fn run_part3_calc(input_str: Vec<String>) -> String {
-    let meteors: Vec<(isize, isize)> = input_str
-        .iter()
-        .map(|x| {
-            let temp = x.split_once(' ').unwrap();
-            (temp.0.parse().unwrap(), temp.1.parse().unwrap())
-        })
-        .collect_vec();
-    let mut value = 0;
-    for meteor in meteors.iter() {
-        let mut highest = -1;
-        let mut score = -1;
-        for start in 0..3 {
-            // try all three start points
-            let (this_highest, this_score) = check_start_meteor(start, meteor);
-            (highest, score) = update_hi_score(highest, score, this_highest, this_score);
-        }
-        value += score;
-    }
-    value.to_string()
-}
 
 fn main() {
     // Part 1: example and actual
@@ -295,9 +284,10 @@ fn main() {
     // Part 3: example and actual
     println!("Part 3");
     let input_str = util::read_input(-3);
-    println!("Example: {}", run_part3_calc(input_str.clone()));
-    println!("Example: {}", run_part3(input_str.clone()));
-    println!("Example: {}", run_part3_alt(input_str));
+    println!("Example: {}", run_part3_calc(input_str.clone()));  // Actual final solution
+    println!("Example: {}", run_part3_full_sim(input_str.clone()));  // Initial reaaaaaallly slow solution
+    println!("Example: {}", run_part3_alt_sim(input_str));  // Slightly better solution
     let input_str = util::read_input(3);
-    println!("Actual: {}\n", run_part3_calc(input_str.clone()));
+    println!("Actual: {}", run_part3_calc(input_str.clone()));
+    println!("Actual: {}\n", run_part3_alt_sim(input_str));  // Slightly better solution
 }
