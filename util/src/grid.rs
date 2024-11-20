@@ -30,6 +30,8 @@ use std::{
     fmt::Display,
     ops::{Add, Div, Mul, Sub},
 };
+use std::hash::Hash;
+use std::ops::Neg;
 // TODO: could make utility impls for 2d and 3d situations, incl getting data quickly with x, y, z
 
 pub trait Point1D: Default + PrimInt + Display + Zero + One + Mul {}
@@ -365,6 +367,170 @@ where
     }
 }
 
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct GridSparse<T, U>(HashMap<Point<U, 2>, T>)
+where U: Default + PrimInt + Display + Zero + One + Mul + Hash + Debug + TryFrom<usize>;
+
+impl<T, U, E> GridSparse<T, U>
+where
+    T: Copy + From<u8> + Debug + PartialEq,
+    U: Default + PrimInt + Display + Zero + One + Mul + Hash + TryFrom<usize, Error=E> + Debug + Neg<Output=U>,
+    E: Debug
+{
+    pub fn new() -> Self {
+        // Make a new empty Grid
+        GridSparse(HashMap::new())
+    }
+
+    pub fn from(vec_str: Vec<&str>, ign: Vec<u8>) -> Self {
+        // '8' -> 56 if T is u8, usize, etc
+        let mut this_map: HashMap<Point<U,2>,T> = HashMap::new();
+        for (x, row) in vec_str.iter().enumerate() {
+            for (y, el) in row.bytes().enumerate().filter(|y| !ign.contains(&y.1)) {
+                this_map.insert(Point([x.try_into().unwrap(), y.try_into().unwrap()]), el.try_into().unwrap());
+            }
+        }
+        GridSparse(this_map)
+    }
+
+    pub fn from_map(vec_str: Vec<&str>, map: HashMap<char, T>) -> Self {
+        let mut this_map: HashMap<Point<U,2>,T> = HashMap::new();
+        for (x, row) in vec_str.iter().enumerate() {
+            for (y, el) in row.chars().enumerate() {
+                if map.keys().contains(&el) {
+                    this_map.insert(Point([x.try_into().unwrap(), y.try_into().unwrap()]), map[&el]);
+                }
+            }
+        }
+        GridSparse(this_map)
+    }
+
+    // pub fn get_dims(&self) -> [usize; 2] {
+    //     [self.0.len(), self.0[0].len()]
+    // }
+    //
+    // pub fn get_bounds(&self) -> [[usize;2];2] {
+    //     self.0.keys().map(|x| x.0[0]) -> take min max
+    //     self.0.keys().map(|x| x.0[1]) -> take min max
+    // }
+    //
+    pub fn fill_lines(&mut self, _fill: T) {
+        // TODO: now does nothing; could make it to fill it (which goes against use of sparse grid)
+    }
+
+    pub fn set_elements(&mut self, elements: HashMap<Point<U, 2>, T>) {
+        for (key, value) in elements.iter() {
+            self.0.insert(*key, *value);
+        }
+    }
+
+    pub fn set_pt(&mut self, el: T, pt: Point<U, 2>) {
+        self.0.insert(pt, el);
+    }
+
+    pub fn set(&mut self, el: T, loc: (U, U)) {
+        self.0.insert(Point(loc.into()), el);
+    }
+
+    pub fn contains(&self, pt: Point<U, 2>) -> bool {
+        self.0.contains_key(&pt)
+    }
+
+    pub fn get(&self, loc: (U, U)) -> T {
+        self.0[&Point(loc.into())]
+    }
+
+    pub fn get_pt(&self, pt: Point<U, 2>) -> T {
+        self.0[&pt]
+    }
+
+    pub fn get_elements(&self, pts: Vec<Point<U, 2>>) -> Vec<T> {
+        pts.iter().map(|pt| self.get_pt(*pt)).collect_vec()
+    }
+
+    // // TODO: move neighbors to Point, to filter out usize vs isize
+    pub fn get_neighbors(&self, pt: Point<U, 2>) -> [T; 4] {
+        let diffs: [Point<U, 2>;4] = [Point([U::zero(), U::one()]), Point([U::one(), U::zero()]), Point([U::zero(), -U::one()]), Point([-U::one(), U::zero()])];
+        diffs
+            .iter()
+            .map(|x| self.get_pt(*x + pt))
+            .collect_vec()
+            .try_into()
+            .unwrap()
+    }
+
+    pub fn get_neighbors_ok(&self, pt: Point<U, 2>) -> Vec<(Point<U, 2>, T)> {
+        let diffs = [Point([U::zero(), U::one()]), Point([U::one(), U::zero()]), Point([U::zero(), -U::one()]), Point([-U::one(), U::zero()])];
+        let mut res = Vec::new();
+        for diff in diffs.iter() {
+            let this = pt + *diff;
+            if self.contains(this) {
+                res.push((this, self.get_pt(this)))
+            }
+        }
+        res
+    }
+
+    pub fn get_neighbors_options(
+        &self,
+        pt: Point<U, 2>,
+        diag: bool,
+        incl_pt: bool,
+        _wrap_around: bool,
+    ) -> Vec<(Point<U, 2>, T)> {
+        let mut diffs = vec![Point([U::zero(), U::one()]), Point([U::one(), U::zero()]), Point([U::zero(), -U::one()]), Point([-U::one(), U::zero()])];
+        if incl_pt {
+            diffs.push(Point([U::zero(), U::zero()]));
+        }
+        if diag {
+            diffs.extend(vec![
+                Point([ U::one(),  U::one()]),
+                Point([ U::one(), - U::one()]),
+                Point([- U::one(), - U::one()]),
+                Point([- U::one(),  U::one()]),
+            ]);
+        }
+
+        let mut res = Vec::new();
+        for diff in diffs {
+            let this = pt + diff;
+            if self.contains(this) {
+                res.push((this, self.get_pt(this)))
+            }
+        }
+        res
+    }
+
+    // pub fn normalize(&self, pt: Point<isize, 2>) -> Point<isize, 2> {
+    //     let dims = self.get_dims();
+    //     Point(
+    //         <Vec<isize> as TryInto<[isize; 2]>>::try_into(
+    //             pt.0.into_iter()
+    //                 .enumerate()
+    //                 .map(|x| x.1.rem_euclid(dims[x.0] as isize))
+    //                 .collect::<Vec<isize>>(),
+    //         )
+    //             .unwrap(),
+    //     )
+    // }
+
+    pub fn count(&self, key: T) -> usize {
+        self.0
+            .iter()
+            .filter(|x| *x.1 == key).count()
+    }
+
+    pub fn filter_key(&self, key: T) -> Vec<Point<U, 2>> {
+        self.0
+            .iter()
+            .filter(|x| *x.1 == key).map(|x| *x.0).collect_vec()
+    }
+}
+
+
+
+
 #[test]
 fn math_operations() {
     // signed 2d  TODO Convert to actual test
@@ -399,13 +565,21 @@ fn math_operations() {
     let grid: Grid<char> = Grid::from(vec!["abcd", "efgh"]);
     println!("{:?}", grid);
 
+    let grid: GridSparse<u8, isize> = GridSparse::from(vec!["abcd", "efgh"], vec!());
+    println!("{:?}", grid);
+    let grid: GridSparse<char, isize> = GridSparse::from(vec!["abcd", "efgh"], vec!());
+    println!("{:?}", grid);
+
     let map: HashMap<char, u8> = "abcdefghijkl"
         .chars()
         .map(|x| (x, x as u8 - 'a' as u8))
         .collect();
-    let mut grid: Grid<u8> = Grid::from_map(vec!["abcd", "efgh", "ijkl"], map);
-    println!("{:?}", grid);
+    let grid1: Grid<u8> = Grid::from_map(vec!["abcd", "efgh", "ijkl"], map.clone());  // TODO make input &
+    println!("{:?}", grid1);
+    let grid2: GridSparse<u8, isize> = GridSparse::from_map(vec!["abcd", "efgh", "ijkl"], map);
+    println!("{:?}", grid2);
 
+    let mut grid = grid1;
     let map: HashMap<Point<isize, 2>, u8> = vec![(Point([0, 1]), 12u8), (Point([1, 1]), 15)]
         .into_iter()
         .collect();
@@ -435,5 +609,37 @@ fn math_operations() {
     );
 
     println!("{}, {:?}", grid.count(4), grid.filter_key(4));
-    println!("{:?}", grid)
+    println!("{:?}", grid);
+
+    let mut grid = grid2;
+    let map: HashMap<Point<isize, 2>, u8> = vec![(Point([0, 1]), 12), (Point([1, 1]), 15)]
+        .into_iter()
+        .collect();
+    grid.set_elements(map);
+    grid.set(4, (0, 0));
+    grid.set_pt(0, Point([0, 3]));
+    println!("{:?}", grid);
+    println!("{}", grid.get((1, 1)));
+    println!("{}", grid.get_pt(Point([1, 1])));
+
+    println!("{:?}", grid.get_neighbors(Point([1, 1])));
+    println!("{:?}", grid.get_neighbors_ok(Point([1, 1])));
+    println!("{:?}", grid.get_neighbors_ok(Point([0, 1])));
+    println!("{:?}", grid.get_neighbors_ok(Point([2, 3])));
+    println!(
+        "{:?}",
+        grid.get_neighbors_options(Point([0, 1]), true, false, false)
+    );
+    println!(
+        "{:?}",
+        grid.get_neighbors_options(Point([0, 1]), true, true, false)
+    );
+    println!("{}, {}", (-1) % 3, (-1_isize).rem_euclid(3));
+    println!(
+        "{:?}",
+        grid.get_neighbors_options(Point([0, 1]), false, false, true)
+    );
+
+    println!("{}, {:?}", grid.count(4), grid.filter_key(4));
+    println!("{:?}", grid);
 }
