@@ -7,7 +7,7 @@ fn run_part1(input_str: Vec<String>) -> String {
 }
 
 fn run_part2(input_str: Vec<String>, example: bool) -> String {
-   shoot_targets(input_str, if example {3} else {19})
+    shoot_targets(input_str, if example { 3 } else { 19 })
 }
 
 fn shoot_targets(input_str: Vec<String>, height_grid: usize) -> String {
@@ -30,12 +30,11 @@ fn shoot_targets(input_str: Vec<String>, height_grid: usize) -> String {
         let height = height_grid - t.0;
         let shooter = (dist + height) % 3;
         let power = (dist + height) / 3;
-        score +=  (shooter + 1) * power
+        score += (shooter + 1) * power
     }
 
     score.to_string()
 }
-
 
 fn get_meteors(input_str: Vec<String>) -> Vec<(isize, isize)> {
     input_str
@@ -46,7 +45,6 @@ fn get_meteors(input_str: Vec<String>) -> Vec<(isize, isize)> {
         })
         .collect_vec()
 }
-
 
 fn update_hi_score(highest: isize, score: isize, y: isize, this_score: isize) -> (isize, isize) {
     if y > highest {
@@ -227,14 +225,14 @@ fn run_part3_alt_sim(input_str: Vec<String>) -> String {
                 }
             }
         }
-        if this_worst_val == 100000000 {  // Fallback to other option - not needed
+        if this_worst_val == 100000000 {
+            // Fallback to other option - not needed
             this_worst_val = sim_meteor(meteor);
         }
         value += this_worst_val;
     }
     value.to_string()
 }
-
 
 fn main() {
     // Part 1: example and actual
@@ -254,10 +252,10 @@ fn main() {
     // Part 3: example and actual
     println!("Part 3");
     let input_str = util::read_input(-3);
-    println!("Example: {}", run_part3_calc(input_str.clone()));  // Actual final solution
-    println!("Example: {}", run_part3_full_sim(input_str.clone()));  // Initial reaaaaaallly slow solution
-    println!("Example: {}", run_part3_alt_sim(input_str));  // Intermediate solution
+    println!("Example: {}", run_part3_calc(input_str.clone())); // Actual final solution
+    println!("Example: {}", run_part3_full_sim(input_str.clone())); // Initial reaaaaaallly slow solution
+    println!("Example: {}", run_part3_alt_sim(input_str)); // Intermediate solution
     let input_str = util::read_input(3);
-    println!("Actual: {}", run_part3_calc(input_str.clone()));  // Actual final solution
+    println!("Actual: {}", run_part3_calc(input_str.clone())); // Actual final solution
     // println!("Actual: {}\n", run_part3_alt_sim(input_str));  // Intermediate solution
 }
