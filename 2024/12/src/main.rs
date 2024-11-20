@@ -3,51 +3,34 @@ use itertools::Itertools;
 use std::cmp::min;
 
 fn run_part1(input_str: Vec<String>) -> String {
-    // A: mod 3 = 0, B: mod 3 = 1
-    let mut all_ts = Vec::new();
-    for row in input_str.iter().enumerate() {
-        for el in row.1.chars().enumerate() {
-            if el.1 == 'T' {
-                all_ts.push((row.0, el.0))
-            }
-        }
-    }
-
-    let mut score = 0;
-    for t in all_ts.iter() {
-        let dist = t.1 - 1;
-        let height = 3 - t.0;
-        let shooter = (dist + height) % 3;
-        let power = (dist + height) / 3;
-        let score_incr = (shooter + 1) * power;
-        score += score_incr
-    }
-
-    score.to_string()
+    shoot_targets(input_str, 3)
 }
 
 fn run_part2(input_str: Vec<String>, example: bool) -> String {
-    let mut all_ts = Vec::new();
+   shoot_targets(input_str, if example {3} else {19})
+}
+
+fn shoot_targets(input_str: Vec<String>, height_grid: usize) -> String {
+    let mut all_targets = Vec::new();
     for row in input_str.iter().enumerate() {
         for el in row.1.chars().enumerate() {
             if el.1 == 'T' {
-                all_ts.push((row.0, el.0))
+                all_targets.push((row.0, el.0))
             }
             if el.1 == 'H' {
-                all_ts.push((row.0, el.0));
-                all_ts.push((row.0, el.0));
+                all_targets.push((row.0, el.0));
+                all_targets.push((row.0, el.0));
             }
         }
     }
 
     let mut score = 0;
-    for t in all_ts.iter() {
+    for t in all_targets.iter() {
         let dist = t.1 - 1;
-        let height = if example { 3 - t.0 } else { 19 - t.0 };
+        let height = height_grid - t.0;
         let shooter = (dist + height) % 3;
         let power = (dist + height) / 3;
-        let score_incr = (shooter + 1) * power;
-        score += score_incr
+        score +=  (shooter + 1) * power
     }
 
     score.to_string()
@@ -163,7 +146,6 @@ fn sim_meteor(meteor: &(isize, isize)) -> isize {
     // shoot at t=0 or t=1).
     let mut this_best_height = 0;
     let mut this_worst_val = 100000000;
-    let mut cand_res = (0, 0, 0);
     for cat in 0..3 {
         for try_pow in 1..3000 {
             let this_res = can_hit(*meteor, cat, try_pow, 0);
@@ -171,11 +153,7 @@ fn sim_meteor(meteor: &(isize, isize)) -> isize {
                 if this_res.1 > this_best_height {
                     this_worst_val = try_pow * (cat + 1);
                     this_best_height = this_res.1;
-                    cand_res = (cat, try_pow, 0);
                 } else if this_res.1 == this_best_height {
-                    if this_worst_val > try_pow * (cat + 1) {
-                        cand_res = (cat, try_pow, 0);
-                    }
                     this_worst_val = min(try_pow * (cat + 1), this_worst_val);
                 }
             }
@@ -186,11 +164,7 @@ fn sim_meteor(meteor: &(isize, isize)) -> isize {
                     if this_res.1 > this_best_height {
                         this_worst_val = try_pow * (cat + 1);
                         this_best_height = this_res.1;
-                        cand_res = (cat, try_pow, t);
                     } else if this_res.1 == this_best_height {
-                        if this_worst_val > try_pow * (cat + 1) {
-                            cand_res = (cat, try_pow, t);
-                        }
                         this_worst_val = min(try_pow * (cat + 1), this_worst_val);
                     }
                 }
@@ -203,11 +177,7 @@ fn sim_meteor(meteor: &(isize, isize)) -> isize {
                         if this_res.1 > this_best_height {
                             this_worst_val = try_pow * (cat + 1);
                             this_best_height = this_res.1;
-                            cand_res = (cat, try_pow, t);
                         } else if this_res.1 == this_best_height {
-                            if this_worst_val > try_pow * (cat + 1) {
-                                cand_res = (cat, try_pow, t);
-                            }
                             this_worst_val = min(try_pow * (cat + 1), this_worst_val);
                         }
                     }
@@ -286,8 +256,8 @@ fn main() {
     let input_str = util::read_input(-3);
     println!("Example: {}", run_part3_calc(input_str.clone()));  // Actual final solution
     println!("Example: {}", run_part3_full_sim(input_str.clone()));  // Initial reaaaaaallly slow solution
-    println!("Example: {}", run_part3_alt_sim(input_str));  // Slightly better solution
+    println!("Example: {}", run_part3_alt_sim(input_str));  // Intermediate solution
     let input_str = util::read_input(3);
-    println!("Actual: {}", run_part3_calc(input_str.clone()));
-    println!("Actual: {}\n", run_part3_alt_sim(input_str));  // Slightly better solution
+    println!("Actual: {}", run_part3_calc(input_str.clone()));  // Actual final solution
+    // println!("Actual: {}\n", run_part3_alt_sim(input_str));  // Intermediate solution
 }
