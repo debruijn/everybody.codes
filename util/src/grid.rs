@@ -223,11 +223,15 @@ where
         Grid(vec)
     }
 
+    pub fn get_dims(&self) -> [usize; 2] {
+        [self.0.len(), self.0[0].len()]
+    }
+
     pub fn fill_lines(&mut self, fill: T) {
         let max_l = self.0.iter().map(|x| x.len()).max().unwrap();
         for row in self.0.iter_mut() {
             if row.len() < max_l {
-                row.extend(vec!(fill).repeat(max_l - row.len()))
+                row.extend(vec![fill].repeat(max_l - row.len()))
             }
         }
     }
@@ -296,6 +300,7 @@ where
         pt: Point<isize, 2>,
         diag: bool,
         incl_pt: bool,
+        wrap_around: bool,
     ) -> Vec<(Point<isize, 2>, T)> {
         let mut diffs = vec![Point([0, 1]), Point([1, 0]), Point([0, -1]), Point([-1, 0])];
         if incl_pt {
@@ -313,11 +318,29 @@ where
         let mut res = Vec::new();
         for diff in diffs {
             let this = pt + diff;
-            if self.contains(this) {
+            if !wrap_around {
+                if self.contains(this) {
+                    res.push((this, self.get_pt(this)))
+                }
+            } else {
+                let this = self.normalize(this);
                 res.push((this, self.get_pt(this)))
             }
         }
         res
+    }
+
+    pub fn normalize(&self, pt: Point<isize, 2>) -> Point<isize, 2> {
+        let dims = self.get_dims();
+        Point(
+            <Vec<isize> as TryInto<[isize; 2]>>::try_into(
+                pt.0.into_iter()
+                    .enumerate()
+                    .map(|x| x.1.rem_euclid(dims[x.0] as isize))
+                    .collect::<Vec<isize>>(),
+            )
+            .unwrap(),
+        )
     }
 
     pub fn count(&self, key: T) -> usize {
@@ -399,11 +422,16 @@ fn math_operations() {
     println!("{:?}", grid.get_neighbors_ok(Point([2, 3])));
     println!(
         "{:?}",
-        grid.get_neighbors_options(Point([0, 1]), true, false)
+        grid.get_neighbors_options(Point([0, 1]), true, false, false)
     );
     println!(
         "{:?}",
-        grid.get_neighbors_options(Point([0, 1]), true, true)
+        grid.get_neighbors_options(Point([0, 1]), true, true, false)
+    );
+    println!("{}, {}", (-1) % 3, (-1_isize).rem_euclid(3));
+    println!(
+        "{:?}",
+        grid.get_neighbors_options(Point([0, 1]), false, false, true)
     );
 
     println!("{}, {:?}", grid.count(4), grid.filter_key(4));
