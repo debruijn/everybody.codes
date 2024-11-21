@@ -430,10 +430,10 @@ where
         GridSparse(this_map)
     }
 
-    // pub fn get_dims(&self) -> [usize; 2] {
-    //     [self.0.len(), self.0[0].len()]
-    // }
-    //
+    pub fn get_dims(&self) -> [U; 2] {
+        self.get_bounds().iter().map(|x| x[0] - x[1] + U::one()).collect_vec().try_into().unwrap()
+    }
+
     pub fn get_bounds(&self) -> [[U;2];2] {
         let x_minmax: [U;2] = match self.0.keys().map(|x| x.0[0]).minmax() {
             MinMaxResult::NoElements => {[U::min_value(), U::max_value()]}  // Revert order on purpose
