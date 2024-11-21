@@ -22,8 +22,8 @@
 // - dist
 // -
 
-use itertools::Itertools;
-use num_traits::{One, Pow, PrimInt, ToPrimitive, Zero};
+use itertools::{Itertools, MinMaxResult};
+use num_traits::{One, Pow, PrimInt, ToPrimitive, Zero, Bounded};
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::{
@@ -44,6 +44,10 @@ pub struct Point<T: Point1D, const N: usize>([T; N]);
 impl<T: Point1D, const N: usize> Point<T, N> {
     pub fn new(coordinates: [T; N]) -> Self {
         Point(coordinates)
+    }
+
+    pub fn get(self) -> [T; N] {
+        self.0
     }
 
     pub fn add_inplace(mut self, rhs: Self) {
@@ -208,7 +212,16 @@ where
         Grid(Vec::new())
     }
 
-    pub fn from(vec_str: Vec<&str>) -> Self {
+    pub fn from_string(vec_str: Vec<String>) -> Self {
+        // '8' -> 56 if T is u8, usize, etc
+        let vec = vec_str
+            .iter()
+            .map(|x| x.bytes().map(|y| y.try_into().unwrap()).collect_vec())
+            .collect_vec();
+        Grid(vec)
+    }
+
+    pub fn from_str(vec_str: Vec<&str>) -> Self {
         // '8' -> 56 if T is u8, usize, etc
         let vec = vec_str
             .iter()
@@ -370,7 +383,7 @@ where
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct GridSparse<T, U>(HashMap<Point<U, 2>, T>)
-where U: Default + PrimInt + Display + Zero + One + Mul + Hash + Debug + TryFrom<usize>;
+where U: Default + PrimInt + Display + Zero + One + Mul + Hash + Debug + TryFrom<usize> + Bounded;
 
 impl<T, U, E> GridSparse<T, U>
 where
@@ -383,7 +396,18 @@ where
         GridSparse(HashMap::new())
     }
 
-    pub fn from(vec_str: Vec<&str>, ign: Vec<u8>) -> Self {
+    pub fn from_string(vec_str: Vec<String>, ign: Vec<u8>) -> Self {
+        // '8' -> 56 if T is u8, usize, etc
+        let mut this_map: HashMap<Point<U,2>,T> = HashMap::new();
+        for (x, row) in vec_str.iter().enumerate() {
+            for (y, el) in row.bytes().enumerate().filter(|y| !ign.contains(&y.1)) {
+                this_map.insert(Point([x.try_into().unwrap(), y.try_into().unwrap()]), el.try_into().unwrap());
+            }
+        }
+        GridSparse(this_map)
+    }
+
+    pub fn from_str(vec_str: Vec<&str>, ign: Vec<u8>) -> Self {
         // '8' -> 56 if T is u8, usize, etc
         let mut this_map: HashMap<Point<U,2>,T> = HashMap::new();
         for (x, row) in vec_str.iter().enumerate() {
@@ -410,11 +434,20 @@ where
     //     [self.0.len(), self.0[0].len()]
     // }
     //
-    // pub fn get_bounds(&self) -> [[usize;2];2] {
-    //     self.0.keys().map(|x| x.0[0]) -> take min max
-    //     self.0.keys().map(|x| x.0[1]) -> take min max
-    // }
-    //
+    pub fn get_bounds(&self) -> [[U;2];2] {
+        let x_minmax: [U;2] = match self.0.keys().map(|x| x.0[0]).minmax() {
+            MinMaxResult::NoElements => {[U::min_value(), U::max_value()]}  // Revert order on purpose
+            MinMaxResult::OneElement(a) => {[a, a]}
+            MinMaxResult::MinMax(a, b) => {[a, b]}
+        };  //take min max
+        let y_minmax: [U;2] = match self.0.keys().map(|x| x.0[1]).minmax() {
+            MinMaxResult::NoElements => {[U::min_value(), U::max_value()]}  // Revert order on purpose
+            MinMaxResult::OneElement(a) => {[a, a]}
+            MinMaxResult::MinMax(a, b) => {[a, b]}
+        };
+        [x_minmax, y_minmax]
+    }
+
     pub fn fill_lines(&mut self, _fill: T) {
         // TODO: now does nothing; could make it to fill it (which goes against use of sparse grid)
     }
@@ -560,14 +593,14 @@ fn math_operations() {
     );
     println!("{}", '8' as usize);
 
-    let grid: Grid<u8> = Grid::from(vec!["abcd", "efgh"]);
+    let grid: Grid<u8> = Grid::from_str(vec!["abcd", "efgh"]);
     println!("{:?}", grid);
-    let grid: Grid<char> = Grid::from(vec!["abcd", "efgh"]);
+    let grid: Grid<char> = Grid::from_str(vec!["abcd", "efgh"]);
     println!("{:?}", grid);
 
-    let grid: GridSparse<u8, isize> = GridSparse::from(vec!["abcd", "efgh"], vec!());
+    let grid: GridSparse<u8, isize> = GridSparse::from_str(vec!["abcd", "efgh"], vec!());
     println!("{:?}", grid);
-    let grid: GridSparse<char, isize> = GridSparse::from(vec!["abcd", "efgh"], vec!());
+    let grid: GridSparse<char, isize> = GridSparse::from_str(vec!["abcd", "efgh"], vec!());
     println!("{:?}", grid);
 
     let map: HashMap<char, u8> = "abcdefghijkl"
