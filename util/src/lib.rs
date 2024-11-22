@@ -1,7 +1,15 @@
 pub mod grid;
 
-use itertools::Itertools;
+use itertools::{Itertools, MinMaxResult};
 use std::fs;
+
+pub fn minmax(min_max: MinMaxResult<isize>) -> [isize; 2] {
+    match min_max {
+        MinMaxResult::NoElements => [0, 0],
+        MinMaxResult::OneElement(a) => [a, a],
+        MinMaxResult::MinMax(a, b) => [a, b],
+    }
+}
 
 pub fn read_input<'a>(mut num: isize) -> Vec<String> {
     let input_type = if num > 0 {

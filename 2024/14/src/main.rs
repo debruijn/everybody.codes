@@ -1,6 +1,6 @@
 use everybody_codes_util as util;
 use everybody_codes_util::grid::Point;
-use itertools::{Itertools, MinMaxResult};
+use itertools::Itertools;
 use std::cmp::max;
 use std::collections::{HashMap, HashSet};
 
@@ -81,11 +81,7 @@ fn run_part3(input_str: Vec<String>) -> String {
 
     // Find min/max of leaf y-values, since the optimum is >99% certain to be in between
     let min_max = leafs.iter().map(|x| x.0[1]).minmax();
-    let min_max = match min_max {
-        MinMaxResult::NoElements => [0, 0],
-        MinMaxResult::OneElement(a) => [a, a],
-        MinMaxResult::MinMax(a, b) => [max(a, 0), b],
-    };
+    let min_max = util::minmax(min_max);
 
     // First main algorithm: find all distances from each leaf to the trunk at all heights
     // -> Use mostly standard BFS & keep track of visited locs
