@@ -146,7 +146,7 @@ impl<T: Point1D, const N: usize> Point<T, N> {
     }
 
     pub fn zero() -> Self {
-        Self([T::zero();N])
+        Self([T::zero(); N])
     }
 
     pub fn axis(ax: usize) -> Self {
@@ -170,9 +170,8 @@ impl<T: Point1D, const N: usize> Point<T, N> {
         dir_vec
     }
 
-
     pub fn get_zero(self) -> Self {
-        Self([T::zero();N])
+        Self([T::zero(); N])
     }
 
     pub fn get_axis(self, ax: usize) -> Self {
@@ -449,10 +448,7 @@ where
 impl<T, U, E> GridSparse<T, U>
 where
     T: Copy + From<u8> + Debug + PartialEq,
-    U: Point1D + Hash
-        + TryFrom<usize, Error = E>
-        + Debug
-        + Neg<Output = U> + Euclid,
+    U: Point1D + Hash + TryFrom<usize, Error = E> + Debug + Neg<Output = U> + Euclid,
     E: Debug,
 {
     pub fn new() -> Self {
@@ -638,7 +634,7 @@ where
                     .map(|x| (x.1 - bounds[x.0][0]).rem_euclid(&dims[x.0]) + bounds[x.0][0])
                     .collect::<Vec<U>>(),
             )
-                .unwrap(),
+            .unwrap(),
         )
     }
 
@@ -684,12 +680,18 @@ fn try_stuff_out() {
     );
     println!("{}", '8' as usize);
 
-    println!("{:?}, {:?}", Point::<isize,2>::axis(1), Point::<i8,3>::naxis(0));
-    println!("{:?}, {:?}", Point::<isize,2>::zero(), Point::<i8,3>::zero());
-    println!("{:?}", Point::<i16,4>::dirs());
+    println!(
+        "{:?}, {:?}",
+        Point::<isize, 2>::axis(1),
+        Point::<i8, 3>::naxis(0)
+    );
+    println!(
+        "{:?}, {:?}",
+        Point::<isize, 2>::zero(),
+        Point::<i8, 3>::zero()
+    );
+    println!("{:?}", Point::<i16, 4>::dirs());
     println!("{:?}", pt1.get_dirs());
-
-
 
     let grid: Grid<u8> = Grid::from_str(vec!["abcd", "efgh"]);
     println!("{:?}", grid);
