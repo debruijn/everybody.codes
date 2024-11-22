@@ -1,77 +1,64 @@
 use everybody_codes_util as util;
 use everybody_codes_util::grid::Point;
 use itertools::{Itertools, MinMaxResult};
-use std::cmp::{max, min};
+use std::cmp::max;
 use std::collections::{HashMap, HashSet};
 
 fn run_part1(input_str: Vec<String>) -> String {
     let mut pt: Point<isize, 3> = Point::new([0, 0, 0]);
 
     let mut max_height = 0;
-    for row in input_str[0].split(',') {
-        if row.chars().next().unwrap() == 'U' {
-            pt = pt + Point([0, row[1..].parse::<isize>().unwrap(), 0]);
-        }
-        if row.chars().next().unwrap() == 'D' {
-            pt = pt + Point([0, -row[1..].parse::<isize>().unwrap(), 0]);
-        }
-        if row.chars().next().unwrap() == 'R' {
-            pt = pt + Point([row[1..].parse::<isize>().unwrap(), 0, 0]);
-        }
-        if row.chars().next().unwrap() == 'L' {
-            pt = pt + Point([-row[1..].parse::<isize>().unwrap(), 0, 0]);
-        }
-        if row.chars().next().unwrap() == 'F' {
-            pt = pt + Point([0, 0, row[1..].parse::<isize>().unwrap()]);
-        }
-        if row.chars().next().unwrap() == 'B' {
-            pt = pt + Point([0, 0, -row[1..].parse::<isize>().unwrap()]);
-        }
+    for step in input_str[0].split(',') {
+        let this_char = step.chars().next().unwrap();
+        pt = pt
+            + match this_char {
+                'U' => Point([0, step[1..].parse::<isize>().unwrap(), 0]),
+                'D' => Point([0, -step[1..].parse::<isize>().unwrap(), 0]),
+                'R' => Point([step[1..].parse::<isize>().unwrap(), 0, 0]),
+                'L' => Point([-step[1..].parse::<isize>().unwrap(), 0, 0]),
+                'F' => Point([0, 0, step[1..].parse::<isize>().unwrap()]),
+                'B' => Point([0, 0, -step[1..].parse::<isize>().unwrap()]),
+                _ => Point([0, 0, 0]),
+            };
         max_height = max(max_height, pt.0[1])
     }
     max_height.to_string()
 }
 
-fn run_part2(input_str: Vec<String>) -> String {
-    // let mut pt: Point<isize, 3> = Point::new([0, 0, 0]);
-
+fn construct_all_branches(
+    input_str: Vec<String>,
+) -> (HashSet<Point<isize, 3>>, HashSet<Point<isize, 3>>) {
+    let mut leafs = HashSet::new();
     let mut hist = HashSet::new();
-
     for row in input_str.iter() {
-        // println!("{row}");
         let mut pt: Point<isize, 3> = Point::new([0, 0, 0]);
-
         for step in row.split(',') {
             let this_char = step.chars().next().unwrap();
             for _ in 0..step[1..].parse::<isize>().unwrap() {
-                if this_char == 'U' {
-                    pt = pt + Point([0, 1, 0]);
-                }
-                if this_char == 'D' {
-                    pt = pt + Point([0, -1, 0]);
-                }
-                if this_char == 'R' {
-                    pt = pt + Point([1, 0, 0]);
-                }
-                if this_char == 'L' {
-                    pt = pt + Point([-1, 0, 0]);
-                }
-                if this_char == 'F' {
-                    pt = pt + Point([0, 0, 1]);
-                }
-                if this_char == 'B' {
-                    pt = pt + Point([0, 0, -1]);
-                }
+                pt = pt
+                    + match this_char {
+                        'U' => Point([0, 1, 0]),
+                        'D' => Point([0, -1, 0]),
+                        'R' => Point([1, 0, 0]),
+                        'L' => Point([-1, 0, 0]),
+                        'F' => Point([0, 0, 1]),
+                        'B' => Point([0, 0, -1]),
+                        _ => Point([0, 0, 0]),
+                    };
                 hist.insert(pt);
-                // println!("{:?}", hist)
             }
         }
+        leafs.insert(pt);
     }
-    // println!("{:?}", hist);
+    (hist, leafs)
+}
+
+fn run_part2(input_str: Vec<String>) -> String {
+    let (hist, _) = construct_all_branches(input_str);
     hist.len().to_string()
 }
 
-pub fn get_neighbors3(pt: Point<isize, 3>) -> [Point<isize, 3>; 6] {
+pub fn get_neighbors3d(pt: Point<isize, 3>) -> [Point<isize, 3>; 6] {
     let diffs = [
         Point([0, 1, 0]),
         Point([1, 0, 0]),
@@ -89,40 +76,10 @@ pub fn get_neighbors3(pt: Point<isize, 3>) -> [Point<isize, 3>; 6] {
 }
 
 fn run_part3(input_str: Vec<String>) -> String {
-    let mut leafs = HashSet::new();
-    let mut hist = HashSet::new();
+    // Construct all branches and final leafs
+    let (branches, leafs) = construct_all_branches(input_str);
 
-    for row in input_str.iter() {
-        // println!("{row}");
-        let mut pt: Point<isize, 3> = Point::new([0, 0, 0]);
-
-        for step in row.split(',') {
-            let this_char = step.chars().next().unwrap();
-            for _ in 0..step[1..].parse::<isize>().unwrap() {
-                if this_char == 'U' {
-                    pt = pt + Point([0, 1, 0]);
-                }
-                if this_char == 'D' {
-                    pt = pt + Point([0, -1, 0]);
-                }
-                if this_char == 'R' {
-                    pt = pt + Point([1, 0, 0]);
-                }
-                if this_char == 'L' {
-                    pt = pt + Point([-1, 0, 0]);
-                }
-                if this_char == 'F' {
-                    pt = pt + Point([0, 0, 1]);
-                }
-                if this_char == 'B' {
-                    pt = pt + Point([0, 0, -1]);
-                }
-                hist.insert(pt);
-                // println!("{:?}", hist)
-            }
-        }
-        leafs.insert(pt);
-    }
+    // Find min/max of leaf y-values, since the optimum is >99% certain to be in between
     let min_max = leafs.iter().map(|x| x.0[1]).minmax();
     let min_max = match min_max {
         MinMaxResult::NoElements => [0, 0],
@@ -130,36 +87,36 @@ fn run_part3(input_str: Vec<String>) -> String {
         MinMaxResult::MinMax(a, b) => [max(a, 0), b],
     };
 
-    // println!("{:?}, {:?}, {:?}", leafs, min_max, hist);
+    // First main algorithm: find all distances from each leaf to the trunk at all heights
+    // -> Use mostly standard BFS & keep track of visited locs
+    // -> Don't stop after first trunk reach to allow for multiple routes to different heights
+    // -> Ignore new locs outside branches.
+    // -> When on the trunk, ignore new locs outside trunk  # TODO is that needed?
+    // -> Ignore new locations on the trunk outside the min_max range  # TODO is that needed?
 
-    // For each leaf:
-    // - Step one away until trunk in area -> store
-    // - New candidates when on trunk: only on trunk
-    // - Get distances to all values within range
-
+    // Store results in res: map each point to vector of (height, dist)  # TODO can refactor
     let mut res: HashMap<Point<isize, 3>, Vec<(isize, isize)>> = HashMap::new();
     for leaf in leafs {
         let mut queue = vec![(leaf, 0)];
         let mut leaf_hist = HashSet::new();
         leaf_hist.insert(leaf);
-        let mut res_hist = Vec::new();
+        let mut res_leaf = Vec::new();
         while queue.len() > 0 {
-            // for _ in 0..10 {
             let (this_pt, this_dist) = *queue.iter().next().unwrap();
             queue.remove(0);
-            let mut neighbors = if this_pt.0[0] == 0 && this_pt.0[2] == 0 {
-                res_hist.push((this_pt.0[1], this_dist));
+            let neighbors = if this_pt.0[0] == 0 && this_pt.0[2] == 0 {
+                res_leaf.push((this_pt.0[1], this_dist));
                 vec![
                     this_pt + Point::new([0, 1, 0]),
                     this_pt + Point::new([0, -1, 0]),
                 ]
             } else {
-                get_neighbors3(this_pt).into_iter().collect_vec()
+                get_neighbors3d(this_pt).into_iter().collect_vec()
             };
             let neighbors = neighbors
                 .iter()
                 .filter(|x| !leaf_hist.contains(x))
-                .filter(|x| hist.contains(x))
+                .filter(|x| branches.contains(x))
                 .filter(|x| {
                     x.0[0] != 0 || x.0[2] != 0 || (x.0[1] >= min_max[0] && x.0[1] <= min_max[1])
                 })
@@ -168,14 +125,19 @@ fn run_part3(input_str: Vec<String>) -> String {
                 queue.push((**neighbor, this_dist + 1));
                 leaf_hist.insert(**neighbor);
             }
-            // println!("{}, {:?}, {:?}", queue.len(), queue, res_hist)
         }
-        res.insert(leaf, res_hist);
+        res.insert(leaf, res_leaf);
     }
 
-    let all_trunk_hs = res.values().map(|x| x.iter().map(|y| y.0)).flatten().collect_vec();
-
-    let final_res: isize = all_trunk_hs.iter()
+    // Second main algorithm: for all values of trunk that are reached, find the distance to that
+    // height for each leaf, sum those for each trunk height, and take the minimum of that sum.
+    let all_trunk_hs = res
+        .values()
+        .map(|x| x.iter().map(|y| y.0))
+        .flatten()
+        .collect_vec();
+    let final_res: isize = all_trunk_hs
+        .iter()
         .map(|h| {
             res.values()
                 .map(|x| x.iter().filter(|y| y.0 == *h).map(|y| y.1).sum::<isize>())
@@ -183,22 +145,6 @@ fn run_part3(input_str: Vec<String>) -> String {
         })
         .min()
         .unwrap();
-
-    // let mut min_val = 100000;
-    // for try_val in min_max[0]..=min_max[1] {
-    //     let try_pt = Point::new([0, try_val, 0]);
-    //
-    //
-    //
-    //     // for leaf in leafs.iter() {
-    //     //     let this = leaf.manhattan_dist(try_pt);
-    //     //     // println!("{:?}, {:?}, {}", try_pt, leaf, this)
-    //     // }
-    //     let this_val = leafs.iter().map(|x| x.manhattan_dist(try_pt)).sum();
-    //     println!("{try_val}, {this_val}");
-    //     min_val = min(min_val, this_val);
-    // }
-
     final_res.to_string()
 }
 
