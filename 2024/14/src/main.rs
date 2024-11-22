@@ -80,6 +80,8 @@ fn run_part3(input_str: Vec<String>) -> String {
     let (branches, leafs) = construct_all_branches(input_str);
 
     // Find min/max of leaf y-values, since the optimum is >99% certain to be in between
+    // (only used if trim_greedily is set to true)
+    let trim_greedily = false;
     let min_max = leafs.iter().map(|x| x.0[1]).minmax();
     let min_max = util::minmax(min_max);
 
@@ -87,10 +89,10 @@ fn run_part3(input_str: Vec<String>) -> String {
     // -> Use mostly standard BFS & keep track of visited locs
     // -> Don't stop after first trunk reach to allow for multiple routes to different heights
     // -> Ignore new locs outside branches.
-    // -> When on the trunk, ignore new locs outside trunk  # TODO is that needed?
-    // -> Ignore new locations on the trunk outside the min_max range  # TODO is that needed?
+    // -> When on the trunk, ignore new locs outside trunk (if trim_greedily; not needed)
+    // -> Ignore new locations on the trunk outside the min_max range (if trim_greedily, not needed)
 
-    // Store results in res: for each point a map of trunk height to dist  # TODO can refactor
+    // Store results in res: for each point a map of trunk height to dist
     let mut res = Vec::new();
     for leaf in leafs {
         let mut queue = vec![(leaf, 0)];
@@ -109,17 +111,21 @@ fn run_part3(input_str: Vec<String>) -> String {
             } else {
                 get_neighbors3d(this_pt).into_iter().collect_vec()
             };
-            let neighbors = neighbors
-                .iter()
+            let mut neighbors = neighbors
+                .into_iter()
                 .filter(|x| !leaf_hist.contains(x))
                 .filter(|x| branches.contains(x))
-                .filter(|x| {
-                    x.0[0] != 0 || x.0[2] != 0 || (x.0[1] >= min_max[0] && x.0[1] <= min_max[1])
-                })
                 .collect_vec();
+            if trim_greedily {
+                neighbors = neighbors.into_iter()
+                    .filter(|x| {
+                        x.0[0] != 0 || x.0[2] != 0 || (x.0[1] >= min_max[0] && x.0[1] <= min_max[1])
+                    })
+                    .collect_vec();
+            }
             for neighbor in neighbors.iter() {
-                queue.push((**neighbor, this_dist + 1));
-                leaf_hist.insert(**neighbor);
+                queue.push((*neighbor, this_dist + 1));
+                leaf_hist.insert(*neighbor);
             }
         }
         res.push(res_leaf);
