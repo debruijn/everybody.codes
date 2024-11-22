@@ -23,23 +23,21 @@
 // -
 
 use itertools::{Itertools, MinMaxResult};
-use num_traits::{One, Pow, PrimInt, ToPrimitive, Zero, Bounded};
-use std::collections::HashMap;
-use std::fmt::Debug;
+use num_traits::{Bounded, Euclid, One, Pow, PrimInt, ToPrimitive, Zero};
 use std::{
-    fmt::Display,
-    ops::{Add, Div, Mul, Sub},
+    collections::HashMap,
+    fmt::{Debug, Display},
+    hash::Hash,
+    ops::{Add, Div, Mul, Neg, Sub},
 };
-use std::hash::Hash;
-use std::ops::Neg;
 // TODO: could make utility impls for 2d and 3d situations, incl getting data quickly with x, y, z
 
-pub trait Point1D: Default + PrimInt + Display + Zero + One + Mul {}
+pub trait Point1D: Default + PrimInt + Display + Zero + One + Mul + Neg + From<i8> {}
 
-impl<T> Point1D for T where T: Default + PrimInt + Display + Zero + One + Mul {}
+impl<T> Point1D for T where T: Default + PrimInt + Display + Zero + One + Mul + Neg + From<i8> {}
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub struct Point<T: Point1D, const N: usize>([T; N]);
+pub struct Point<T: Point1D, const N: usize>(pub [T; N]);
 
 impl<T: Point1D, const N: usize> Point<T, N> {
     pub fn new(coordinates: [T; N]) -> Self {
@@ -146,6 +144,57 @@ impl<T: Point1D, const N: usize> Point<T, N> {
             .unwrap()
             .pow(1.0 / (pow.to_f64().unwrap()))
     }
+
+    pub fn zero() -> Self {
+        Self([T::zero();N])
+    }
+
+    pub fn axis(ax: usize) -> Self {
+        let mut axis = Self::zero();
+        axis.0[ax] = T::one();
+        axis
+    }
+
+    pub fn naxis(ax: usize) -> Self {
+        let mut axis = Self::zero();
+        axis.0[ax] = T::one();
+        axis.neg()
+    }
+
+    pub fn dirs() -> Vec<Self> {
+        let mut dir_vec = Vec::new();
+        for i in 0..N {
+            dir_vec.push(Self::axis(i));
+            dir_vec.push(Self::naxis(i));
+        }
+        dir_vec
+    }
+
+
+    pub fn get_zero(self) -> Self {
+        Self([T::zero();N])
+    }
+
+    pub fn get_axis(self, ax: usize) -> Self {
+        let mut axis = Self::zero();
+        axis.0[ax] = T::one();
+        axis
+    }
+
+    pub fn get_naxis(self, ax: usize) -> Self {
+        let mut axis = Self::zero();
+        axis.0[ax] = T::one();
+        axis.neg()
+    }
+
+    pub fn get_dirs(self) -> Vec<Self> {
+        let mut dir_vec = Vec::new();
+        for i in 0..N {
+            dir_vec.push(Self::axis(i));
+            dir_vec.push(Self::naxis(i));
+        }
+        dir_vec
+    }
 }
 
 impl<T: Point1D, const N: usize> Add for Point<T, N> {
@@ -193,6 +242,18 @@ impl<T: Point1D, const N: usize> Mul for Point<T, N> {
             sum[idx] = sum[idx] * rhs.0[idx];
         }
         Self(sum)
+    }
+}
+
+impl<T: Point1D, const N: usize> Neg for Point<T, N> {
+    type Output = Self;
+
+    fn neg(self) -> Self::Output {
+        let mut new = Self::zero();
+        for idx in 0..N {
+            new.0[idx] = self.0[idx].mul((-1).try_into().unwrap());
+        }
+        new
     }
 }
 
@@ -380,16 +441,19 @@ where
     }
 }
 
-
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct GridSparse<T, U>(HashMap<Point<U, 2>, T>)
-where U: Default + PrimInt + Display + Zero + One + Mul + Hash + Debug + TryFrom<usize> + Bounded;
+where
+    U: Point1D + Hash + Debug + TryFrom<usize> + Bounded;
 
 impl<T, U, E> GridSparse<T, U>
 where
     T: Copy + From<u8> + Debug + PartialEq,
-    U: Default + PrimInt + Display + Zero + One + Mul + Hash + TryFrom<usize, Error=E> + Debug + Neg<Output=U>,
-    E: Debug
+    U: Point1D + Hash
+        + TryFrom<usize, Error = E>
+        + Debug
+        + Neg<Output = U> + Euclid,
+    E: Debug,
 {
     pub fn new() -> Self {
         // Make a new empty Grid
@@ -398,10 +462,13 @@ where
 
     pub fn from_string(vec_str: Vec<String>, ign: Vec<u8>) -> Self {
         // '8' -> 56 if T is u8, usize, etc
-        let mut this_map: HashMap<Point<U,2>,T> = HashMap::new();
+        let mut this_map: HashMap<Point<U, 2>, T> = HashMap::new();
         for (x, row) in vec_str.iter().enumerate() {
             for (y, el) in row.bytes().enumerate().filter(|y| !ign.contains(&y.1)) {
-                this_map.insert(Point([x.try_into().unwrap(), y.try_into().unwrap()]), el.try_into().unwrap());
+                this_map.insert(
+                    Point([x.try_into().unwrap(), y.try_into().unwrap()]),
+                    el.try_into().unwrap(),
+                );
             }
         }
         GridSparse(this_map)
@@ -409,21 +476,27 @@ where
 
     pub fn from_str(vec_str: Vec<&str>, ign: Vec<u8>) -> Self {
         // '8' -> 56 if T is u8, usize, etc
-        let mut this_map: HashMap<Point<U,2>,T> = HashMap::new();
+        let mut this_map: HashMap<Point<U, 2>, T> = HashMap::new();
         for (x, row) in vec_str.iter().enumerate() {
             for (y, el) in row.bytes().enumerate().filter(|y| !ign.contains(&y.1)) {
-                this_map.insert(Point([x.try_into().unwrap(), y.try_into().unwrap()]), el.try_into().unwrap());
+                this_map.insert(
+                    Point([x.try_into().unwrap(), y.try_into().unwrap()]),
+                    el.try_into().unwrap(),
+                );
             }
         }
         GridSparse(this_map)
     }
 
     pub fn from_map(vec_str: Vec<&str>, map: HashMap<char, T>) -> Self {
-        let mut this_map: HashMap<Point<U,2>,T> = HashMap::new();
+        let mut this_map: HashMap<Point<U, 2>, T> = HashMap::new();
         for (x, row) in vec_str.iter().enumerate() {
             for (y, el) in row.chars().enumerate() {
                 if map.keys().contains(&el) {
-                    this_map.insert(Point([x.try_into().unwrap(), y.try_into().unwrap()]), map[&el]);
+                    this_map.insert(
+                        Point([x.try_into().unwrap(), y.try_into().unwrap()]),
+                        map[&el],
+                    );
                 }
             }
         }
@@ -431,19 +504,24 @@ where
     }
 
     pub fn get_dims(&self) -> [U; 2] {
-        self.get_bounds().iter().map(|x| x[0] - x[1] + U::one()).collect_vec().try_into().unwrap()
+        self.get_bounds()
+            .iter()
+            .map(|x| x[0] - x[1] + U::one())
+            .collect_vec()
+            .try_into()
+            .unwrap()
     }
 
-    pub fn get_bounds(&self) -> [[U;2];2] {
-        let x_minmax: [U;2] = match self.0.keys().map(|x| x.0[0]).minmax() {
-            MinMaxResult::NoElements => {[U::min_value(), U::max_value()]}  // Revert order on purpose
-            MinMaxResult::OneElement(a) => {[a, a]}
-            MinMaxResult::MinMax(a, b) => {[a, b]}
-        };  //take min max
-        let y_minmax: [U;2] = match self.0.keys().map(|x| x.0[1]).minmax() {
-            MinMaxResult::NoElements => {[U::min_value(), U::max_value()]}  // Revert order on purpose
-            MinMaxResult::OneElement(a) => {[a, a]}
-            MinMaxResult::MinMax(a, b) => {[a, b]}
+    pub fn get_bounds(&self) -> [[U; 2]; 2] {
+        let x_minmax: [U; 2] = match self.0.keys().map(|x| x.0[0]).minmax() {
+            MinMaxResult::NoElements => [U::min_value(), U::max_value()], // Revert order on purpose
+            MinMaxResult::OneElement(a) => [a, a],
+            MinMaxResult::MinMax(a, b) => [a, b],
+        }; //take min max
+        let y_minmax: [U; 2] = match self.0.keys().map(|x| x.0[1]).minmax() {
+            MinMaxResult::NoElements => [U::min_value(), U::max_value()], // Revert order on purpose
+            MinMaxResult::OneElement(a) => [a, a],
+            MinMaxResult::MinMax(a, b) => [a, b],
         };
         [x_minmax, y_minmax]
     }
@@ -484,7 +562,12 @@ where
 
     // // TODO: move neighbors to Point, to filter out usize vs isize
     pub fn get_neighbors(&self, pt: Point<U, 2>) -> [T; 4] {
-        let diffs: [Point<U, 2>;4] = [Point([U::zero(), U::one()]), Point([U::one(), U::zero()]), Point([U::zero(), -U::one()]), Point([-U::one(), U::zero()])];
+        let diffs: [Point<U, 2>; 4] = [
+            Point([U::zero(), U::one()]),
+            Point([U::one(), U::zero()]),
+            Point([U::zero(), -U::one()]),
+            Point([-U::one(), U::zero()]),
+        ];
         diffs
             .iter()
             .map(|x| self.get_pt(*x + pt))
@@ -494,7 +577,12 @@ where
     }
 
     pub fn get_neighbors_ok(&self, pt: Point<U, 2>) -> Vec<(Point<U, 2>, T)> {
-        let diffs = [Point([U::zero(), U::one()]), Point([U::one(), U::zero()]), Point([U::zero(), -U::one()]), Point([-U::one(), U::zero()])];
+        let diffs = [
+            Point([U::zero(), U::one()]),
+            Point([U::one(), U::zero()]),
+            Point([U::zero(), -U::one()]),
+            Point([-U::one(), U::zero()]),
+        ];
         let mut res = Vec::new();
         for diff in diffs.iter() {
             let this = pt + *diff;
@@ -512,16 +600,21 @@ where
         incl_pt: bool,
         _wrap_around: bool,
     ) -> Vec<(Point<U, 2>, T)> {
-        let mut diffs = vec![Point([U::zero(), U::one()]), Point([U::one(), U::zero()]), Point([U::zero(), -U::one()]), Point([-U::one(), U::zero()])];
+        let mut diffs = vec![
+            Point([U::zero(), U::one()]),
+            Point([U::one(), U::zero()]),
+            Point([U::zero(), -U::one()]),
+            Point([-U::one(), U::zero()]),
+        ];
         if incl_pt {
             diffs.push(Point([U::zero(), U::zero()]));
         }
         if diag {
             diffs.extend(vec![
-                Point([ U::one(),  U::one()]),
-                Point([ U::one(), - U::one()]),
-                Point([- U::one(), - U::one()]),
-                Point([- U::one(),  U::one()]),
+                Point([U::one(), U::one()]),
+                Point([U::one(), -U::one()]),
+                Point([-U::one(), -U::one()]),
+                Point([-U::one(), U::one()]),
             ]);
         }
 
@@ -535,38 +628,36 @@ where
         res
     }
 
-    // pub fn normalize(&self, pt: Point<isize, 2>) -> Point<isize, 2> {
-    //     let dims = self.get_dims();
-    //     Point(
-    //         <Vec<isize> as TryInto<[isize; 2]>>::try_into(
-    //             pt.0.into_iter()
-    //                 .enumerate()
-    //                 .map(|x| x.1.rem_euclid(dims[x.0] as isize))
-    //                 .collect::<Vec<isize>>(),
-    //         )
-    //             .unwrap(),
-    //     )
-    // }
+    pub fn normalize(&self, pt: Point<U, 2>) -> Point<U, 2> {
+        let dims = self.get_dims();
+        let bounds = self.get_bounds();
+        Point(
+            <Vec<U> as TryInto<[U; 2]>>::try_into(
+                pt.0.into_iter()
+                    .enumerate()
+                    .map(|x| (x.1 - bounds[x.0][0]).rem_euclid(&dims[x.0]) + bounds[x.0][0])
+                    .collect::<Vec<U>>(),
+            )
+                .unwrap(),
+        )
+    }
 
     pub fn count(&self, key: T) -> usize {
-        self.0
-            .iter()
-            .filter(|x| *x.1 == key).count()
+        self.0.iter().filter(|x| *x.1 == key).count()
     }
 
     pub fn filter_key(&self, key: T) -> Vec<Point<U, 2>> {
         self.0
             .iter()
-            .filter(|x| *x.1 == key).map(|x| *x.0).collect_vec()
+            .filter(|x| *x.1 == key)
+            .map(|x| *x.0)
+            .collect_vec()
     }
 }
 
-
-
-
 #[test]
-fn math_operations() {
-    // signed 2d  TODO Convert to actual test
+fn try_stuff_out() {
+    // TODO Convert to actual test
     let pt1 = Point::new([6isize, 4]);
     let pt2 = Point::new([2isize, 2]);
 
@@ -593,21 +684,28 @@ fn math_operations() {
     );
     println!("{}", '8' as usize);
 
+    println!("{:?}, {:?}", Point::<isize,2>::axis(1), Point::<i8,3>::naxis(0));
+    println!("{:?}, {:?}", Point::<isize,2>::zero(), Point::<i8,3>::zero());
+    println!("{:?}", Point::<i16,4>::dirs());
+    println!("{:?}", pt1.get_dirs());
+
+
+
     let grid: Grid<u8> = Grid::from_str(vec!["abcd", "efgh"]);
     println!("{:?}", grid);
     let grid: Grid<char> = Grid::from_str(vec!["abcd", "efgh"]);
     println!("{:?}", grid);
 
-    let grid: GridSparse<u8, isize> = GridSparse::from_str(vec!["abcd", "efgh"], vec!());
+    let grid: GridSparse<u8, isize> = GridSparse::from_str(vec!["abcd", "efgh"], vec![]);
     println!("{:?}", grid);
-    let grid: GridSparse<char, isize> = GridSparse::from_str(vec!["abcd", "efgh"], vec!());
+    let grid: GridSparse<char, isize> = GridSparse::from_str(vec!["abcd", "efgh"], vec![]);
     println!("{:?}", grid);
 
     let map: HashMap<char, u8> = "abcdefghijkl"
         .chars()
         .map(|x| (x, x as u8 - 'a' as u8))
         .collect();
-    let grid1: Grid<u8> = Grid::from_map(vec!["abcd", "efgh", "ijkl"], map.clone());  // TODO make input &
+    let grid1: Grid<u8> = Grid::from_map(vec!["abcd", "efgh", "ijkl"], map.clone()); // TODO make input &
     println!("{:?}", grid1);
     let grid2: GridSparse<u8, isize> = GridSparse::from_map(vec!["abcd", "efgh", "ijkl"], map);
     println!("{:?}", grid2);
