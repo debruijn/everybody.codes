@@ -4,8 +4,11 @@ use itertools::Itertools;
 use std::cmp::max;
 use std::collections::{HashMap, HashSet};
 
+type Pt = Point<isize, 3>;
+type PtSet = HashSet<Pt>;
+
 fn run_part1(input_str: Vec<String>) -> String {
-    let mut pt: Point<isize, 3> = Point::new([0, 0, 0]);
+    let mut pt: Pt = Pt::new([0, 0, 0]);
 
     let mut max_height = 0;
     for step in input_str[0].split(',') {
@@ -25,13 +28,11 @@ fn run_part1(input_str: Vec<String>) -> String {
     max_height.to_string()
 }
 
-fn construct_all_branches(
-    input_str: Vec<String>,
-) -> (HashSet<Point<isize, 3>>, HashSet<Point<isize, 3>>) {
-    let mut leafs = HashSet::new();
-    let mut hist = HashSet::new();
+fn construct_all_branches(input_str: Vec<String>) -> (PtSet, PtSet) {
+    let mut leafs = PtSet::new();
+    let mut hist = PtSet::new();
     for row in input_str.iter() {
-        let mut pt: Point<isize, 3> = Point::new([0, 0, 0]);
+        let mut pt: Pt = Pt::new([0, 0, 0]);
         for step in row.split(',') {
             let this_char = step.chars().next().unwrap();
             for _ in 0..step[1..].parse::<isize>().unwrap() {
@@ -58,7 +59,7 @@ fn run_part2(input_str: Vec<String>) -> String {
     hist.len().to_string()
 }
 
-pub fn get_neighbors3d(pt: Point<isize, 3>) -> [Point<isize, 3>; 6] {
+pub fn get_neighbors3d(pt: Pt) -> [Pt; 6] {
     let diffs = [
         Point([0, 1, 0]),
         Point([1, 0, 0]),
@@ -105,8 +106,8 @@ fn run_part3(input_str: Vec<String>) -> String {
             let neighbors = if this_pt.0[0] == 0 && this_pt.0[2] == 0 {
                 res_leaf.insert(this_pt.0[1], this_dist);
                 vec![
-                    this_pt + Point::new([0, 1, 0]),
-                    this_pt + Point::new([0, -1, 0]),
+                    this_pt + Pt::new([0, 1, 0]),
+                    this_pt + Pt::new([0, -1, 0]),
                 ]
             } else {
                 get_neighbors3d(this_pt).into_iter().collect_vec()
@@ -117,7 +118,8 @@ fn run_part3(input_str: Vec<String>) -> String {
                 .filter(|x| branches.contains(x))
                 .collect_vec();
             if trim_greedily {
-                neighbors = neighbors.into_iter()
+                neighbors = neighbors
+                    .into_iter()
                     .filter(|x| {
                         x.0[0] != 0 || x.0[2] != 0 || (x.0[1] >= min_max[0] && x.0[1] <= min_max[1])
                     })
