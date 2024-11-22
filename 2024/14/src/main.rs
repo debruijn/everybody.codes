@@ -83,25 +83,25 @@ fn run_part3(input_str: Vec<String>) -> String {
     let min_max = leafs.iter().map(|x| x.0[1]).minmax();
     let min_max = util::minmax(min_max);
 
-    // First main algorithm: find all distances from each leaf to the trunk at all heights
+    // Main algorithm: find all distances from each leaf to the trunk at all heights
     // -> Use mostly standard BFS & keep track of visited locs
     // -> Don't stop after first trunk reach to allow for multiple routes to different heights
     // -> Ignore new locs outside branches.
     // -> When on the trunk, ignore new locs outside trunk  # TODO is that needed?
     // -> Ignore new locations on the trunk outside the min_max range  # TODO is that needed?
 
-    // Store results in res: map each point to vector of (height, dist)  # TODO can refactor
-    let mut res: HashMap<Point<isize, 3>, Vec<(isize, isize)>> = HashMap::new();
+    // Store results in res: for each point a map of trunk height to dist  # TODO can refactor
+    let mut res = Vec::new();
     for leaf in leafs {
         let mut queue = vec![(leaf, 0)];
         let mut leaf_hist = HashSet::new();
         leaf_hist.insert(leaf);
-        let mut res_leaf = Vec::new();
+        let mut res_leaf: HashMap<isize, isize> = HashMap::new();
         while queue.len() > 0 {
             let (this_pt, this_dist) = *queue.iter().next().unwrap();
             queue.remove(0);
             let neighbors = if this_pt.0[0] == 0 && this_pt.0[2] == 0 {
-                res_leaf.push((this_pt.0[1], this_dist));
+                res_leaf.insert(this_pt.0[1], this_dist);
                 vec![
                     this_pt + Point::new([0, 1, 0]),
                     this_pt + Point::new([0, -1, 0]),
@@ -122,23 +122,15 @@ fn run_part3(input_str: Vec<String>) -> String {
                 leaf_hist.insert(**neighbor);
             }
         }
-        res.insert(leaf, res_leaf);
+        res.push(res_leaf);
     }
 
-    // Second main algorithm: for all values of trunk that are reached, find the distance to that
+    // Process results: for all values of trunk that are reached, find the distance to that
     // height for each leaf, sum those for each trunk height, and take the minimum of that sum.
-    let all_trunk_hs = res
-        .values()
-        .map(|x| x.iter().map(|y| y.0))
-        .flatten()
-        .collect_vec();
+    let all_trunk_hs = res[0].keys().collect_vec();
     let final_res: isize = all_trunk_hs
         .iter()
-        .map(|h| {
-            res.values()
-                .map(|x| x.iter().filter(|y| y.0 == *h).map(|y| y.1).sum::<isize>())
-                .sum::<isize>()
-        })
+        .map(|h| res.iter().map(|x| x[h]).sum::<isize>())
         .min()
         .unwrap();
     final_res.to_string()
