@@ -7,7 +7,7 @@ use std::collections::{HashMap, HashSet};
 type Pt = Point<isize, 3>;
 type PtSet = HashSet<Pt>;
 
-fn run_part1(input_str: Vec<String>) -> String {
+fn run_part1(input_str: Vec<String>, _example: bool) -> String {
     let mut pt: Pt = Pt::new([0, 0, 0]);
 
     let mut max_height = 0;
@@ -54,7 +54,7 @@ fn construct_all_branches(input_str: Vec<String>) -> (PtSet, PtSet) {
     (hist, leafs)
 }
 
-fn run_part2(input_str: Vec<String>) -> String {
+fn run_part2(input_str: Vec<String>, _example: bool) -> String {
     let (hist, _) = construct_all_branches(input_str);
     hist.len().to_string()
 }
@@ -76,7 +76,7 @@ pub fn get_neighbors3d(pt: Pt) -> [Pt; 6] {
         .unwrap()
 }
 
-fn run_part3(input_str: Vec<String>) -> String {
+fn run_part3(input_str: Vec<String>, _example: bool) -> String {
     // Construct all branches and final leafs
     let (branches, leafs) = construct_all_branches(input_str);
 
@@ -105,10 +105,7 @@ fn run_part3(input_str: Vec<String>) -> String {
             queue.remove(0);
             let neighbors = if this_pt.0[0] == 0 && this_pt.0[2] == 0 {
                 res_leaf.insert(this_pt.0[1], this_dist);
-                vec![
-                    this_pt + Pt::new([0, 1, 0]),
-                    this_pt + Pt::new([0, -1, 0]),
-                ]
+                vec![this_pt + Pt::new([0, 1, 0]), this_pt + Pt::new([0, -1, 0])]
             } else {
                 get_neighbors3d(this_pt).into_iter().collect_vec()
             };
@@ -147,24 +144,17 @@ fn run_part3(input_str: Vec<String>) -> String {
 fn main() {
     // Part 1: example and actual
     println!("Part 1");
-    let input_str = util::read_input(-1);
-    println!("Example: {}", run_part1(input_str));
-    let input_str = util::read_input(1);
-    println!("Actual: {}\n", run_part1(input_str));
+    println!("Example: {}", util::run(&run_part1, -1));
+    println!("Actual: {}\n", util::run(&run_part1, 1));
 
-    // Part 2: actual
+    // Part 2: example and actual
     println!("Part 2");
-    let input_str = util::read_input(-2);
-    println!("Example: {}", run_part2(input_str));
-    let input_str = util::read_input(2);
-    println!("Actual: {}\n", run_part2(input_str));
+    println!("Example: {}", util::run(&run_part2, -2));
+    println!("Actual: {}\n", util::run(&run_part2, 2));
 
     // Part 3: example and actual
     println!("Part 3");
-    let input_str = util::read_input(-3);
-    println!("Example 1: {}", run_part3(input_str));
-    let input_str = util::read_input(-4);
-    println!("Example 2: {}", run_part3(input_str));
-    let input_str = util::read_input(3);
-    println!("Actual: {}\n", run_part3(input_str));
+    println!("Example 1: {}", util::run(&run_part3, -3));
+    println!("Example 2: {}", util::run(&run_part3, -4));
+    println!("Actual: {}\n", util::run(&run_part3, 3));
 }
