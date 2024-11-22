@@ -13,7 +13,7 @@ pub fn minmax(min_max: MinMaxResult<isize>) -> [isize; 2] {
     }
 }
 
-pub fn run(f: &dyn Fn(Vec<String>, bool) -> String, file: isize) -> String {
+pub fn run(f: fn(Vec<String>, bool) -> String, file: isize) -> String {
     let input_str = read_input(file);
     let before = Instant::now();
     let out = f(input_str, file < 0);
