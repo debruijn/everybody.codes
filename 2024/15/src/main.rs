@@ -1,13 +1,15 @@
 use everybody_codes_util as util;
 use everybody_codes_util::grid::{Grid, Point};
 use itertools::Itertools;
-use std::collections::{HashSet};
+use std::collections::HashSet;
+
+type Pt = Point<isize, 2>;
 
 fn run_part1(input_str: Vec<String>, _example: bool) -> String {
     let grid: Grid<char> = Grid::from_string(input_str.clone());
     let loc = Point([0, input_str[0].len() as isize / 2]);
     let mut seen = HashSet::new();
-    let mut queue: Vec<(Point<isize, 2>, isize)> = Vec::new();
+    let mut queue: Vec<(Pt, isize)> = Vec::new();
     let final_steps;
     queue.push((loc, 0));
     loop {
@@ -17,7 +19,7 @@ fn run_part1(input_str: Vec<String>, _example: bool) -> String {
             break;
         }
 
-        let mut neighbors: Vec<(Point<isize, 2>, char)> = grid.get_neighbors_ok(this_pt);
+        let mut neighbors: Vec<(Pt, char)> = grid.get_neighbors_ok(this_pt);
 
         neighbors = neighbors
             .into_iter()
@@ -42,9 +44,17 @@ fn run_part2(input_str: Vec<String>, _example: bool) -> String {
         .unique()
         .collect_vec();
     let start_loc = Point([0, input_str[0].len() as isize / 2]);
-    let mut seen: HashSet<(Point<isize, 2>, Vec<bool>)> = HashSet::new();
-    let mut queue: Vec<(Point<isize, 2>, isize, Vec<bool>)> = Vec::new();
-    let final_steps;
+    run_algo(&grid, start_loc, herb_types).to_string()
+}
+
+fn run_algo(grid: &Grid<char>, start_loc: Pt, herb_types: Vec<char>) -> isize {
+    // Run BFS with state equal to number steps and which herbs you have collected
+    // Pop first (should use Deque)
+    // Trim on seen locs with the same state (ign steps since that will then always be better)
+    // Stop if back at start_point with all herbs
+    let mut seen: HashSet<(Pt, Vec<bool>)> = HashSet::new();
+    let mut queue: Vec<(Pt, isize, Vec<bool>)> = Vec::new();
+    let final_steps; // Preallocate final result
     let mut start_state = Vec::new();
     for _ in 0..herb_types.len() {
         start_state.push(false)
@@ -57,18 +67,20 @@ fn run_part2(input_str: Vec<String>, _example: bool) -> String {
             break;
         }
 
-        let mut neighbors: Vec<(Point<isize, 2>, char)> = grid.get_neighbors_ok(this_pt);
-
+        // Get neighbors and filter on walls/lake and what we have seen already
+        let mut neighbors: Vec<(Pt, char)> = grid.get_neighbors_ok(this_pt);
         neighbors = neighbors
             .into_iter()
             .filter(|x| x.1 != '#' && x.1 != '~')
             .filter(|x| !seen.contains(&(x.0, this_state.clone())))
             .collect_vec();
+
+        // All neighbors left over will be added to queue (and seen). Determine with what state.
         for neighbor in neighbors.iter() {
             seen.insert((neighbor.0, this_state.clone()));
             let mut new_state = this_state.clone();
             let this_char = grid.get_pt(neighbor.0);
-            if herb_types.contains(&this_char) {
+            if herb_types.contains(&&this_char) {
                 let herb_loc = herb_types
                     .iter()
                     .position(|x| x == &grid.get_pt(neighbor.0))
@@ -81,83 +93,75 @@ fn run_part2(input_str: Vec<String>, _example: bool) -> String {
             queue.push((neighbor.0, this_steps + 1, new_state))
         }
     }
-    final_steps.to_string()
-}
-
-
-fn run_algo(grid: &Grid<char>, start_loc: Point<isize,2>, herb_types: Vec<&char>, target_loc: Point<isize,2>) -> isize {
-    let mut seen: HashSet<(Point<isize, 2>, Vec<bool>)> = HashSet::new();
-    let mut queue: Vec<(Point<isize, 2>, isize, Vec<bool>)> = Vec::new();
-    let final_steps;
-    let mut start_state = Vec::new();
-    for _ in 0..herb_types.len() {
-        start_state.push(false)
-    }
-    queue.push((start_loc, 0, start_state));
-    loop {
-        let (this_pt, this_steps, this_state) = queue.remove(0);
-        if this_pt == target_loc && this_state.iter().all(|x| *x) {
-            final_steps = this_steps;
-            break;
-        }
-
-        let mut neighbors: Vec<(Point<isize, 2>, char)> = grid.get_neighbors_ok(this_pt);
-
-        neighbors = neighbors
-            .into_iter()
-            .filter(|x| x.1 != '#' && x.1 != '~')
-            .filter(|x| !seen.contains(&(x.0, this_state.clone())))
-            .collect_vec();
-        for neighbor in neighbors.iter() {
-            seen.insert((neighbor.0, this_state.clone()));
-            let mut new_state = this_state.clone();
-            let this_char = grid.get_pt(neighbor.0);
-            if herb_types.contains(&&this_char) {
-                let herb_loc = herb_types
-                    .iter()
-                    .position(|x| *x == &grid.get_pt(neighbor.0))
-                    .unwrap();
-                if !new_state[herb_loc] {
-                    new_state[herb_loc] = true;
-                    seen.insert((neighbor.0, new_state.clone()));
-                }
-            }
-            queue.push((neighbor.0, this_steps + 1, new_state))
-        }
-    }
-    println!("{}", final_steps);
     final_steps
 }
 
+fn filter_herbs(herb_types: &Vec<char>, pt: Pt, left: bool, grid: &Grid<char>) -> Vec<char> {
+    // Filter the herbs to all herbs to the left or right of the given point.
+    let this_herbs = herb_types
+        .iter()
+        .filter(|x| **x != grid.get_pt(pt))
+        .collect_vec();
+    let mut new_herbs = Vec::new();
+    for herb in this_herbs.iter() {
+        if grid
+            .filter_key(**herb)
+            .iter()
+            .filter(|x| {
+                if left {
+                    x.0[1] < pt.0[1]
+                } else {
+                    x.0[1] > pt.0[1]
+                }
+            })
+            .count()
+            > 0
+        {
+            new_herbs.push(**herb)
+        }
+    }
+    new_herbs
+}
 
 fn run_part3(input_str: Vec<String>, _example: bool) -> String {
-    let mut grid: Grid<char> = Grid::from_string(input_str.clone());
-    let loc_E = grid.filter_key('E').into_iter().last().unwrap();
-    let loc_R = grid.filter_key('R').into_iter().next().unwrap();
+    // Split grid into 3 based on last E and first R locations (could have used both Ks as well)
+    // These are independent subgrids, so you can solve left and right with E and R as start point,
+    // solve middle with E and R as normal herbs, and add the three together.
 
+    // Get grid and locs
+    let mut grid: Grid<char> = Grid::from_string(input_str.clone());
+    let loc_e = grid.filter_key('E').into_iter().last().unwrap();
+    let loc_r = grid.filter_key('R').into_iter().next().unwrap();
+    let start_loc = Point([0, input_str[0].len() as isize / 2]);
+
+    // Get herbs to collect in each subgrids
     let herb_types = input_str
         .join("")
         .chars()
         .filter(|x| *x != '.' && *x != '#' && *x != '~')
         .unique()
         .collect_vec();
-    let herb_E = herb_types.iter().filter(|x| grid.filter_key(**x).iter().filter(|y| y.0[1] < loc_E.0[1]).count()>0).filter(|x| **x != 'E').collect_vec();
-    let herb_R = herb_types.iter().filter(|x| grid.filter_key(**x).iter().filter(|y| y.0[1] > loc_R.0[1]).count()>0).filter(|x| **x != 'R').collect_vec();
-    let herb_S = herb_types.iter().filter(|x| grid.filter_key(**x).iter().filter(|y| (y.0[1] >= loc_E.0[1]) && (y.0[1] <= loc_R.0[1])).count()>0).collect_vec();
-    let start_loc = Point([0, input_str[0].len() as isize / 2]);
+    let herb_e = filter_herbs(&herb_types, loc_e, true, &grid);
+    let herb_r = filter_herbs(&herb_types, loc_r, false, &grid);
+    let herb_s = herb_types
+        .into_iter()
+        .filter(|x| !herb_e.contains(x) && !herb_r.contains(x))
+        .collect_vec();
 
-    grid.set_pt('#', loc_E + Point([-2, 0]));
-    grid.set_pt('#', loc_R + Point([-2, 0]));
-    let center_grid = run_algo(&grid, start_loc, herb_S, start_loc);
+    // For middle grid: block points off to avoid diversions in the other subgrids (also works without but slower)
+    grid.set_pt('#', loc_e + Point([-2, 0]));
+    grid.set_pt('#', loc_r + Point([-2, 0]));
+    let center_grid = run_algo(&grid, start_loc, herb_s);
 
-    grid.set_pt('.', loc_E + Point([-2, 0]));
-    grid.set_pt('.', loc_R + Point([-2, 0]));
-    grid.set_pt('#', loc_E + Point([0, 2]));
-    grid.set_pt('#', loc_R + Point([0, -2]));
-    let left_grid = run_algo(&grid, loc_E, herb_E, loc_E);
-    let right_grid = run_algo(&grid, loc_R, herb_R, loc_R);
+    // For left/right grids: revert the above blockage, and add two new ones.
+    grid.set_pt('.', loc_e + Point([-2, 0]));
+    grid.set_pt('.', loc_r + Point([-2, 0]));
+    grid.set_pt('#', loc_e + Point([0, 2]));
+    grid.set_pt('#', loc_r + Point([0, -2]));
+    let left_grid = run_algo(&grid, loc_e, herb_e);
+    let right_grid = run_algo(&grid, loc_r, herb_r);
 
-    (center_grid+left_grid+right_grid).to_string()
+    (center_grid + left_grid + right_grid).to_string()
 }
 
 fn main() {
@@ -170,9 +174,10 @@ fn main() {
 
     // Part 2: example and actual
     println!("Part 2");
-    println!("Example: {}", util::run(run_part2, 1));
-    println!("Example: {}", util::run(run_part2, -2));
-    println!("Actual: {}\n", util::run(run_part2, 2));
+    println!("Example 1: {}", util::run(run_part2, -1));
+    println!("Example 2: {}", util::run(run_part2, -2));
+    println!("Actual 1: {}", util::run(run_part2, 1));
+    println!("Actual 2: {}\n", util::run(run_part2, 2));
 
     // Part 3: example and actual
     println!("Part 3");
