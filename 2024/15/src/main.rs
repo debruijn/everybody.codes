@@ -1,12 +1,12 @@
 use everybody_codes_util as util;
-use everybody_codes_util::grid::{Grid, Point};
+use everybody_codes_util::grid::{Grid, GridSparse2D, Point};
 use itertools::Itertools;
 use std::collections::{HashSet, VecDeque};
 
 type Pt = Point<isize, 2>;
 
 fn run_part1(input_str: Vec<String>, _example: bool) -> String {
-    let grid: Grid<char> = Grid::from_string(input_str.clone());
+    let grid: GridSparse2D<u8, isize> = GridSparse2D::from_string(input_str.clone(), vec![b'#']);
     let loc = Point([0, input_str[0].len() as isize / 2]);
     let mut seen = HashSet::new();
     let mut queue: Vec<(Pt, isize)> = Vec::new();
@@ -14,16 +14,16 @@ fn run_part1(input_str: Vec<String>, _example: bool) -> String {
     queue.push((loc, 0));
     loop {
         let (this_pt, this_steps) = queue.remove(0);
-        if grid.get_pt(this_pt) == 'H' {
+        if grid.get_pt(this_pt) == b'H' {
             final_steps = this_steps * 2;
             break;
         }
 
-        let mut neighbors: Vec<(Pt, char)> = grid.get_neighbors_ok(this_pt);
+        let mut neighbors: Vec<(Pt, u8)> = grid.get_neighbors_ok(this_pt);
 
         neighbors = neighbors
             .into_iter()
-            .filter(|x| x.1 != '#')
+            .filter(|x| x.1 != b'#')
             .filter(|x| !seen.contains(&x.0))
             .collect_vec();
         for neighbor in neighbors.iter() {
