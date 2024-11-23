@@ -1,8 +1,38 @@
+use std::cmp::min;
+use std::collections::TryReserveError;
 use itertools::{izip, Itertools};
 use std::fmt;
 use std::fmt::Debug;
-use std::iter::Zip;
-use std::slice::Iter;
+use std::iter::{Map, Zip};
+use std::slice::{Iter, IterMut};
+use std::vec::{Drain, IntoIter};
+// Missing what could make sense:
+// v capacity
+// v clear
+// v drain
+// x entry
+// x extract_if
+// v get_key_value
+// x get_many_mut
+// x get_many_unchecked_mut
+// x get_mut
+// v into_keys
+// v into_values
+// v iter_mut
+// x raw_entry
+// x raw_entry_mut
+// x remove_entry
+// v reserve
+// v retain
+// v shrink_to
+// v shrink_to_fit
+// x try_insert
+// v try_reserve
+// - values_mut
+// - with_capacity
+
+// More traits:
+// - Eq, PartialEq, FromIterator<(K,V)>, IntoIterator
 
 #[derive(Clone, Default)]
 pub struct NonHashMapMultiVec<K, V> {
@@ -10,9 +40,95 @@ pub struct NonHashMapMultiVec<K, V> {
     vec_v: Vec<V>,
 }
 
+impl<K, V> NonHashMapMultiVec<K, V> {
+    pub fn iter(&self) -> Zip<Iter<'_, K>, Iter<'_, V>> {
+        izip!(self.vec_k.iter(), self.vec_v.iter())
+    }
+
+    pub fn iter_mut(&mut self) -> Zip<IterMut<'_, K>, IterMut<'_, V>> {
+        izip!(self.vec_k.iter_mut(), self.vec_v.iter_mut())
+    }
+
+    pub fn len(&self) -> usize {
+        self.vec_k.len()
+    }
+
+    pub fn values(&self) -> &Vec<V> {
+        &self.vec_v
+    }
+
+    pub fn values_mut(&mut self) -> IterMut<'_, V> {
+        self.vec_v.iter_mut()
+    }
+
+    pub fn into_values(self) -> IntoIter<V> {
+        self.vec_v.into_iter()
+    }
+
+    pub fn keys(&self) -> &Vec<K> {
+        &self.vec_k
+    }
+
+    pub fn into_keys(self) -> IntoIter<K> {
+        self.vec_k.into_iter()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.vec_k.is_empty()
+    }
+
+    pub fn capacity(&self) -> usize {
+        min(self.vec_k.capacity(), self.vec_v.capacity())
+    }
+
+    pub fn shrink_to(&mut self, min_capacity: usize) {
+        self.vec_k.shrink_to(min_capacity);
+        self.vec_v.shrink_to(min_capacity);
+    }
+
+    pub fn shrink_to_fit(&mut self) {
+        self.vec_k.shrink_to_fit();
+        self.vec_v.shrink_to_fit();
+    }
+
+    pub fn reserve(&mut self, additional: usize) {
+        self.vec_k.reserve(additional);
+        self.vec_v.reserve(additional);
+    }
+
+    pub fn try_reserve(&mut self, additional: usize) -> Result<(), TryReserveError> {
+        self.vec_k.try_reserve(additional)?;
+        Ok(self.vec_v.try_reserve(additional)?)
+    }
+
+    pub fn clear(&mut self) {
+        self.vec_k.clear();
+        self.vec_v.clear();
+    }
+
+    pub fn drain(&mut self) -> Zip<Drain<'_, K>, Drain<'_, V>> {
+        izip!(self.vec_k.drain(..), self.vec_v.drain(..))
+    }
+}
+
+impl<K: Copy, V: Copy> NonHashMapMultiVec<K, V> {
+    pub fn retain<F>(&mut self, mut f: F)
+    where
+        F: FnMut(&K, &V) -> bool {
+        (self.vec_k, self.vec_v) = self.iter().filter(|x| f(x.0, x.1)).collect_vec().into_iter().multiunzip();
+    }
+
+}
+
 impl<K: Default, V: Default> NonHashMapMultiVec<K, V> {
     pub fn new() -> Self {
         Default::default()
+    }
+
+    pub fn with_capacity(capacity: usize) -> Self {
+        let mut this: Self = Default::default();
+        this.reserve(capacity);
+        this
     }
 }
 
@@ -29,6 +145,19 @@ impl<K: PartialEq, V> NonHashMapMultiVec<K, V> {
             }
         }
     }
+
+    // pub fn try_insert(&mut self, k: K, v: V) -> Result<&mut V, OccupiedError<'_, K, V>> {
+    //     let loc_k = self.vec_k.iter().position(|x| *x == k);
+    //     match loc_k {
+    //         None => {
+    //             self.vec_k.push(k);
+    //             self.vec_v.push(v);
+    //             Ok(self.vec_v.last_mut().unwrap())
+    //         }
+    //         Some(loc) => Err(OccupiedError)
+    //     }
+    // }
+
     pub fn contains_key(&self, k: &K) -> bool {
         let loc_k = self.vec_k.iter().position(|x| *x == *k);
         match loc_k {
@@ -42,6 +171,22 @@ impl<K: PartialEq, V> NonHashMapMultiVec<K, V> {
         match loc_k {
             None => None,
             Some(loc) => self.vec_v.get(loc),
+        }
+    }
+
+    pub fn get_mut(&mut self, k: &K) -> Option<&mut V> {
+        let loc_k = self.vec_k.iter().position(|x| *x == *k);
+        match loc_k {
+            None => None,
+            Some(loc) => self.vec_v.get_mut(loc),
+        }
+    }
+
+    pub fn get_key_value<'a>(&'a self, k: &'a K) -> Option<(&'a K, &'a V)> {
+        let loc_k = self.vec_k.iter().position(|x| *x == *k);
+        match loc_k {
+            None => None,
+            Some(loc) => Some((k, self.vec_v.get(loc).unwrap())),
         }
     }
 
@@ -68,29 +213,6 @@ impl<K: PartialEq, V> NonHashMapMultiVec<K, V> {
     }
 }
 
-impl<K, V> NonHashMapMultiVec<K, V> {
-    pub fn iter(&self) -> Zip<Iter<'_, K>, Iter<'_, V>> {
-        izip!(self.vec_k.iter(), self.vec_v.iter())
-    }
-
-    pub fn len(&self) -> usize {
-        self.vec_k.len()
-    }
-
-    pub fn values(&self) -> &Vec<V> {
-        &self.vec_v
-    }
-
-    pub fn keys(&self) -> &Vec<K> {
-        &self.vec_k
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.vec_k.is_empty()
-    }
-
-}
-
 impl<K, V> Debug for NonHashMapMultiVec<K, V>
 where
     K: Debug,
@@ -106,9 +228,89 @@ pub struct NonHashMapVecTuple<K, V> {
     vec: Vec<(K, V)>,
 }
 
+impl<K, V> NonHashMapVecTuple<K, V> {
+    pub fn iter(&self) -> Iter<'_, (K, V)> {
+        self.vec.iter()
+    }
+
+    pub fn iter_mut(&mut self) -> IterMut<'_, (K, V)> {
+        self.vec.iter_mut()
+    }
+
+    pub fn len(&self) -> usize {
+        self.vec.len()
+    }
+
+    pub fn values(&self) -> Vec<&V> {
+        self.vec.iter().map(|x| &x.1).collect_vec()
+    }
+
+    pub fn values_mut<'a>(&mut self) -> Map<IterMut<'_, (K, V)>, fn(&'a mut (K, V)) -> V> {
+        self.vec.iter_mut().map(|x| x.1)
+    }
+
+    pub fn into_values(self) -> IntoIter<V> {
+        self.vec.into_iter().map(|x| x.1).collect_vec().into_iter()
+
+    }
+
+    pub fn keys(&self) -> Vec<&K> {
+        self.vec.iter().map(|x| &x.0).collect_vec()
+    }
+
+    pub fn into_keys<'a>(self) -> IntoIter<K> {
+        self.vec.into_iter().map(|x| x.0).collect_vec().into_iter()
+
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.vec.is_empty()
+    }
+
+    pub fn capacity(&self) -> usize {
+        self.vec.capacity()
+    }
+
+    pub fn shrink_to(&mut self, min_capacity: usize) {
+        self.vec.shrink_to(min_capacity);
+    }
+
+    pub fn shrink_to_fit(&mut self) {
+        self.vec.shrink_to_fit();
+    }
+
+    pub fn reserve(&mut self, additional: usize) {
+        self.vec.reserve(additional)
+    }
+
+    pub fn try_reserve(&mut self, additional: usize) -> Result<(), TryReserveError>{
+        self.vec.try_reserve(additional)
+    }
+
+    pub fn clear(&mut self) {
+        self.vec.clear();
+    }
+
+    pub fn drain(&mut self) -> Drain<'_, (K, V)> {
+        self.vec.drain(..)
+    }
+
+    pub fn retain<F>(&mut self, mut f: F)
+    where
+        F: FnMut(&K, &V) -> bool {
+        self.vec.retain(|x| f(&x.0, &x.1))
+    }
+}
+
 impl<K: Default, V: Default> NonHashMapVecTuple<K, V> {
     pub fn new() -> Self {
         Default::default()
+    }
+
+    pub fn with_capacity(capacity: usize) -> Self {
+        let mut this: Self = Default::default();
+        this.reserve(capacity);
+        this
     }
 }
 
@@ -140,6 +342,21 @@ impl<K: PartialEq, V> NonHashMapVecTuple<K, V> {
         }
     }
 
+    pub fn get_mut(&mut self, k: &K) -> Option<&mut V> {
+        let loc = self.vec.iter().position(|x| x.0 == *k);
+        match loc {
+            None => None,
+            Some(loc) => Some(&mut self.vec.get_mut(loc).unwrap().1),
+        }
+    }
+
+    pub fn get_key_value(&self, k: &K) -> Option<&(K, V)> {
+        let loc = self.vec.iter().position(|x| x.0 == *k);
+        match loc {
+            None => None,
+            Some(loc) => self.vec.get(loc)
+        }
+    }
     pub fn remove(&mut self, k: &K) -> Option<V> {
         let loc = self.vec.iter().position(|x| x.0 == *k);
         match loc {
@@ -155,29 +372,6 @@ impl<K: PartialEq, V> NonHashMapVecTuple<K, V> {
             Some(loc) => Some(self.vec.swap_remove(loc).1),
         }
     }
-}
-
-impl<K, V> NonHashMapVecTuple<K, V> {
-    pub fn iter(&self) -> Iter<'_, (K, V)> {
-        self.vec.iter()
-    }
-
-    pub fn len(&self) -> usize {
-        self.vec.len()
-    }
-
-    pub fn values(&self) -> Vec<&V> {
-        self.vec.iter().map(|x| &x.1).collect_vec()
-    }
-
-    pub fn keys(&self) -> Vec<&K> {
-        self.vec.iter().map(|x| &x.0).collect_vec()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.vec.is_empty()
-    }
-
 }
 
 impl<K, V> Debug for NonHashMapVecTuple<K, V>
@@ -281,7 +475,7 @@ fn try_stuff_out() {
     for i in 0..r {
         nhm2.insert(i, i);
     }
-    let res = nhm2.values().into_iter().sum::<isize>();
+    let res = nhm2.into_values().sum::<isize>();
     let after = Instant::now();
     println!("{:?} in {:?}", res, after - before);
 }
