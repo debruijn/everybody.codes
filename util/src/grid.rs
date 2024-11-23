@@ -481,6 +481,20 @@ where
             .next().unwrap()
     }
 
+    pub fn filter_last(&self, key: T) -> Point<isize, 2> {
+        self.0
+            .iter()
+            .enumerate()
+            .map(|x| {
+                x.1.iter()
+                    .enumerate()
+                    .filter(|y| *y.1 == key)
+                    .map(move |y| Point([x.0 as isize, y.0 as isize]))
+            })
+            .flatten()
+            .last().unwrap()
+    }
+
     pub fn filter_keys(&self, keys: Vec<T>) -> Vec<Point<isize, 2>> {
         self.0
             .iter()
@@ -713,6 +727,13 @@ where
             .next().unwrap().0
     }
 
+    pub fn filter_last(&self, key: T) -> Point<U, 2> {
+        *self.0
+            .iter()
+            .filter(|x| *x.1 == key)
+            .last().unwrap().0
+    }
+
     pub fn filter_keys(&self, keys: Vec<T>) -> Vec<Point<U, 2>> {
         self.0
             .iter()
@@ -926,6 +947,13 @@ where
             .iter()
             .filter(|x| *x.1 == key)
             .next().unwrap().0
+    }
+
+    pub fn filter_last(&self, key: T) -> Point<U, N> {
+        *self.0
+            .iter()
+            .filter(|x| *x.1 == key)
+            .last().unwrap().0
     }
 
     pub fn filter_keys(&self, keys: Vec<T>) -> Vec<Point<U, N>> {
