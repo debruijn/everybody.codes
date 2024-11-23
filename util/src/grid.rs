@@ -988,7 +988,7 @@ fn try_stuff_out() {
     let grid: Grid<char> = Grid::from_str(vec!["abcd", "efgh"]);
     println!("{:?}", grid);
 
-    let grid: GridSparse2D<u8, isize> = GridSparse2D::from_str(vec!["abcd", "efgh"], vec![]);
+    let grid: GridSparse<u8, 3, isize> = GridSparse::from_str(vec!["abcd", "efgh"], vec![]);
     println!("{:?}", grid);
     let grid: GridSparse2D<char, isize> = GridSparse2D::from_str(vec!["abcd", "efgh"], vec![]);
     println!("{:?}", grid);
@@ -999,7 +999,7 @@ fn try_stuff_out() {
         .collect();
     let grid1: Grid<u8> = Grid::from_map(vec!["abcd", "efgh", "ijkl"], map.clone()); // TODO make input &
     println!("{:?}", grid1);
-    let grid2: GridSparse2D<u8, isize> = GridSparse2D::from_map(vec!["abcd", "efgh", "ijkl"], map);
+    let grid2: GridSparse<u8, 2, isize> = GridSparse::from_map(vec!["abcd", "efgh", "ijkl"], map);
     println!("{:?}", grid2);
 
     let mut grid = grid1;
