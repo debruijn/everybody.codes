@@ -80,6 +80,15 @@ impl<K, V> NonHashMapMultiVec<K, V> {
     pub fn values(&self) -> &Vec<V> {
         &self.vec_v
     }
+
+    pub fn keys(&self) -> &Vec<K> {
+        &self.vec_k
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.vec_k.is_empty()
+    }
+
 }
 
 impl<K, V> Debug for NonHashMapMultiVec<K, V>
@@ -160,6 +169,15 @@ impl<K, V> NonHashMapVecTuple<K, V> {
     pub fn values(&self) -> Vec<&V> {
         self.vec.iter().map(|x| &x.1).collect_vec()
     }
+
+    pub fn keys(&self) -> Vec<&K> {
+        self.vec.iter().map(|x| &x.0).collect_vec()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.vec.is_empty()
+    }
+
 }
 
 impl<K, V> Debug for NonHashMapVecTuple<K, V>
