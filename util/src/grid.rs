@@ -34,7 +34,10 @@ use std::{
 
 pub trait Point1D: Debug + Default + PrimInt + Display + Zero + One + Mul + Neg + From<i8> {}
 
-impl<T> Point1D for T where T: Debug + Default + PrimInt + Display + Zero + One + Mul + Neg + From<i8> {}
+impl<T> Point1D for T where
+    T: Debug + Default + PrimInt + Display + Zero + One + Mul + Neg + From<i8>
+{
+}
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct Point<T: Point1D, const N: usize>(pub [T; N]);
@@ -46,12 +49,12 @@ impl<T: Point1D, const N: usize> Point<T, N> {
 
     pub fn from_2d(pt: Point<T, 2>) -> Self {
         if N == 2 {
-            Self::new(vec!(pt.0[0], pt.0[1]).try_into().unwrap())
+            Self::new(vec![pt.0[0], pt.0[1]].try_into().unwrap())
         } else if N < 2 {
-            Self::new(vec!(pt.0[0]).try_into().unwrap())
+            Self::new(vec![pt.0[0]].try_into().unwrap())
         } else {
-            let mut coords = vec!(pt.0[0], pt.0[1]);
-            coords.extend(vec!(T::zero(); N-2).iter());
+            let mut coords = vec![pt.0[0], pt.0[1]];
+            coords.extend(vec![T::zero(); N - 2].iter());
             Self::new(coords.try_into().unwrap())
         }
     }
@@ -186,7 +189,7 @@ impl<T: Point1D, const N: usize> Point<T, N> {
         let dirs_by_dir = Self::dirs_by_dir();
         let mut res = Vec::new();
         for this_combo in dirs_by_dir.iter().multi_cartesian_product() {
-            let mut this_pt = Point::<T,N>::zero();
+            let mut this_pt = Point::<T, N>::zero();
             for pt in this_combo.into_iter() {
                 this_pt = this_pt + *pt;
             }
@@ -211,7 +214,7 @@ impl<T: Point1D, const N: usize> Point<T, N> {
         Self::dirs()
     }
 
-    fn dirs_by_dir() -> Vec<[Self;3]> {
+    fn dirs_by_dir() -> Vec<[Self; 3]> {
         let mut dir_vec = Vec::new();
         for i in 0..N {
             dir_vec.push([Self::axis(i), Self::zero(), Self::naxis(i)]);
@@ -478,7 +481,8 @@ where
                     .map(move |y| Point([x.0 as isize, y.0 as isize]))
             })
             .flatten()
-            .next().unwrap()
+            .next()
+            .unwrap()
     }
 
     pub fn filter_last(&self, key: T) -> Point<isize, 2> {
@@ -492,7 +496,8 @@ where
                     .map(move |y| Point([x.0 as isize, y.0 as isize]))
             })
             .flatten()
-            .last().unwrap()
+            .last()
+            .unwrap()
     }
 
     pub fn filter_keys(&self, keys: Vec<T>) -> Vec<Point<isize, 2>> {
@@ -721,17 +726,11 @@ where
     }
 
     pub fn filter_first(&self, key: T) -> Point<U, 2> {
-        *self.0
-            .iter()
-            .filter(|x| *x.1 == key)
-            .next().unwrap().0
+        *self.0.iter().filter(|x| *x.1 == key).next().unwrap().0
     }
 
     pub fn filter_last(&self, key: T) -> Point<U, 2> {
-        *self.0
-            .iter()
-            .filter(|x| *x.1 == key)
-            .last().unwrap().0
+        *self.0.iter().filter(|x| *x.1 == key).last().unwrap().0
     }
 
     pub fn filter_keys(&self, keys: Vec<T>) -> Vec<Point<U, 2>> {
@@ -742,7 +741,6 @@ where
             .collect_vec()
     }
 }
-
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct GridSparse<T, const N: usize, U>(HashMap<Point<U, N>, T>)
@@ -890,11 +888,13 @@ where
         incl_pt: bool,
         _wrap_around: bool,
     ) -> Vec<(Point<U, N>, T)> {
-
-        let diffs: Vec<Point<U,N>> = if diag {
+        let diffs: Vec<Point<U, N>> = if diag {
             let mut diffs = Point::<U, N>::diag_dirs();
             if !incl_pt {
-                let zero_ind = diffs.iter().position(|x| *x == Point::<U, N>::zero()).unwrap();
+                let zero_ind = diffs
+                    .iter()
+                    .position(|x| *x == Point::<U, N>::zero())
+                    .unwrap();
                 diffs.swap_remove(zero_ind);
             }
             diffs
@@ -926,7 +926,7 @@ where
                     .map(|x| (x.1 - bounds[x.0][0]).rem_euclid(&dims[x.0]) + bounds[x.0][0])
                     .collect::<Vec<U>>(),
             )
-                .unwrap(),
+            .unwrap(),
         )
     }
 
@@ -943,17 +943,11 @@ where
     }
 
     pub fn filter_first(&self, key: T) -> Point<U, N> {
-        *self.0
-            .iter()
-            .filter(|x| *x.1 == key)
-            .next().unwrap().0
+        *self.0.iter().filter(|x| *x.1 == key).next().unwrap().0
     }
 
     pub fn filter_last(&self, key: T) -> Point<U, N> {
-        *self.0
-            .iter()
-            .filter(|x| *x.1 == key)
-            .last().unwrap().0
+        *self.0.iter().filter(|x| *x.1 == key).last().unwrap().0
     }
 
     pub fn filter_keys(&self, keys: Vec<T>) -> Vec<Point<U, N>> {
@@ -964,7 +958,6 @@ where
             .collect_vec()
     }
 }
-
 
 #[test]
 fn try_stuff_out() {
