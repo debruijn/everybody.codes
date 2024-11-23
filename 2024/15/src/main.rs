@@ -126,8 +126,8 @@ fn run_part3(input_str: Vec<String>, _example: bool) -> String {
 
     // Get grid and locs
     let mut grid: Grid<char> = Grid::from_string(input_str.clone());
-    let loc_e = grid.filter_key('E').into_iter().last().unwrap();
-    let loc_r = grid.filter_key('R').into_iter().next().unwrap();
+    let loc_e = grid.filter_last('E');
+    let loc_r = grid.filter_first('R');
     let start_loc = Point([0, input_str[0].len() as isize / 2]);
 
     // Get herbs to collect in each subgrids
