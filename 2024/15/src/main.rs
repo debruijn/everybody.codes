@@ -1,7 +1,7 @@
 use everybody_codes_util as util;
 use everybody_codes_util::grid::{Grid, Point};
 use itertools::Itertools;
-use std::collections::HashSet;
+use std::collections::{HashSet, VecDeque};
 
 type Pt = Point<isize, 2>;
 
@@ -49,19 +49,15 @@ fn run_part2(input_str: Vec<String>, _example: bool) -> String {
 
 fn run_algo(grid: &Grid<char>, start_loc: Pt, herb_types: Vec<char>) -> isize {
     // Run BFS with state equal to number steps and which herbs you have collected
-    // Pop first (should use Deque)
     // Trim on seen locs with the same state (ign steps since that will then always be better)
     // Stop if back at start_point with all herbs
     let mut seen: HashSet<(Pt, Vec<bool>)> = HashSet::new();
-    let mut queue: Vec<(Pt, isize, Vec<bool>)> = Vec::new();
+    let mut queue: VecDeque<(Pt, isize, Vec<bool>)> = VecDeque::new();
     let final_steps; // Preallocate final result
-    let mut start_state = Vec::new();
-    for _ in 0..herb_types.len() {
-        start_state.push(false)
-    }
-    queue.push((start_loc, 0, start_state));
+    let start_state = vec![false; herb_types.len()];
+    queue.push_back((start_loc, 0, start_state));
     loop {
-        let (this_pt, this_steps, this_state) = queue.remove(0);
+        let (this_pt, this_steps, this_state) = queue.pop_front().unwrap();
         if this_pt == start_loc && this_state.iter().all(|x| *x) {
             final_steps = this_steps;
             break;
@@ -90,7 +86,7 @@ fn run_algo(grid: &Grid<char>, start_loc: Pt, herb_types: Vec<char>) -> isize {
                     seen.insert((neighbor.0, new_state.clone()));
                 }
             }
-            queue.push((neighbor.0, this_steps + 1, new_state))
+            queue.push_back((neighbor.0, this_steps + 1, new_state))
         }
     }
     final_steps
