@@ -1,7 +1,8 @@
+use bit_vec::BitVec;
 use everybody_codes_util as util;
 use everybody_codes_util::grid::{Grid, GridSparse2D, Point};
 use itertools::Itertools;
-use std::collections::{HashSet, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque};
 
 type Pt = Point<isize, 2>;
 
@@ -51,14 +52,14 @@ fn run_algo(grid: &Grid<char>, start_loc: Pt, herb_types: Vec<char>) -> isize {
     // Run BFS with state equal to number steps and which herbs you have collected
     // Trim on seen locs with the same state (ign steps since that will then always be better)
     // Stop if back at start_point with all herbs
-    let mut seen: HashSet<(Pt, Vec<bool>)> = HashSet::new();
-    let mut queue: VecDeque<(Pt, isize, Vec<bool>)> = VecDeque::new();
+    let mut seen: HashMap<Pt, Vec<BitVec>> = HashMap::with_capacity(grid.count_all());
+    let mut queue: VecDeque<(Pt, isize, BitVec)> = VecDeque::new();
     let final_steps; // Preallocate final result
-    let start_state = vec![false; herb_types.len()];
+    let start_state = BitVec::from_elem(herb_types.len(), false);
     queue.push_back((start_loc, 0, start_state));
     loop {
         let (this_pt, this_steps, this_state) = queue.pop_front().unwrap();
-        if this_pt == start_loc && this_state.iter().all(|x| *x) {
+        if this_pt == start_loc && this_state.all() {
             final_steps = this_steps;
             break;
         }
@@ -68,12 +69,28 @@ fn run_algo(grid: &Grid<char>, start_loc: Pt, herb_types: Vec<char>) -> isize {
         neighbors = neighbors
             .into_iter()
             .filter(|x| x.1 != '#' && x.1 != '~')
-            .filter(|x| !seen.contains(&(x.0, this_state.clone())))
             .collect_vec();
 
         // All neighbors left over will be added to queue (and seen). Determine with what state.
         for neighbor in neighbors.iter() {
-            seen.insert((neighbor.0, this_state.clone()));
+            if !seen.contains_key(&neighbor.0) {
+                seen.insert(neighbor.0, vec![this_state.clone()]);
+            } else {
+                let neighbor_state = seen.get_mut(&neighbor.0).unwrap();
+                if neighbor_state
+                    .iter()
+                    .map(|x| {
+                        let mut new_state = this_state.clone();
+                        new_state.difference(x);
+                        new_state.any()
+                    })
+                    .all(|x| x)
+                {
+                    neighbor_state.push(this_state.clone())
+                } else {
+                    continue;
+                }
+            }
             let mut new_state = this_state.clone();
             let this_char = grid.get_pt(neighbor.0);
             if herb_types.contains(&&this_char) {
@@ -82,8 +99,9 @@ fn run_algo(grid: &Grid<char>, start_loc: Pt, herb_types: Vec<char>) -> isize {
                     .position(|x| x == &grid.get_pt(neighbor.0))
                     .unwrap();
                 if !new_state[herb_loc] {
-                    new_state[herb_loc] = true;
-                    seen.insert((neighbor.0, new_state.clone()));
+                    new_state.set(herb_loc, true);
+                    let neighbor_state = seen.get_mut(&neighbor.0).unwrap();
+                    neighbor_state.push(new_state.clone())
                 }
             }
             queue.push_back((neighbor.0, this_steps + 1, new_state))
@@ -178,4 +196,5 @@ fn main() {
     // Part 3: example and actual
     println!("Part 3");
     println!("Actual: {}\n", util::run(run_part3, 3));
+    println!("Actual without tricks: {}\n", util::run(run_part2, 3));
 }
