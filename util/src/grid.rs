@@ -456,6 +456,10 @@ where
             .sum()
     }
 
+    pub fn count_all(&self) -> usize {
+        self.get_dims().iter().product()
+    }
+
     pub fn filter_key(&self, key: T) -> Vec<Point<isize, 2>> {
         self.0
             .iter()
@@ -717,6 +721,10 @@ where
         self.0.iter().filter(|x| *x.1 == key).count()
     }
 
+    pub fn count_all(&self) -> usize {
+        self.0.len()
+    }
+
     pub fn filter_key(&self, key: T) -> Vec<Point<U, 2>> {
         self.0
             .iter()
@@ -932,6 +940,10 @@ where
 
     pub fn count(&self, key: T) -> usize {
         self.0.iter().filter(|x| *x.1 == key).count()
+    }
+
+    pub fn count_all(&self) -> usize {
+        self.0.len()
     }
 
     pub fn filter_key(&self, key: T) -> Vec<Point<U, N>> {
