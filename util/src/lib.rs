@@ -1,5 +1,5 @@
 pub mod grid;
-pub mod nonhashmap;
+pub mod nohashmap;
 
 use itertools::{Itertools, MinMaxResult};
 use std::fs;

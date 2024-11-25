@@ -3,17 +3,17 @@ use std::cmp::min;
 use std::collections::TryReserveError;
 use std::fmt;
 use std::fmt::Debug;
-use std::iter::{Map, Zip};
+use std::iter::Zip;
 use std::slice::{Iter, IterMut};
 use std::vec::{Drain, IntoIter};
 
 #[derive(Clone, Default)]
-pub struct NonHashMapMultiVec<K, V> {
+pub struct NoHashMapMultiVec<K, V> {
     vec_k: Vec<K>,
     vec_v: Vec<V>,
 }
 
-impl<K, V> NonHashMapMultiVec<K, V> {
+impl<K, V> NoHashMapMultiVec<K, V> {
     pub fn iter(&self) -> Zip<Iter<'_, K>, Iter<'_, V>> {
         izip!(self.vec_k.iter(), self.vec_v.iter())
     }
@@ -84,7 +84,7 @@ impl<K, V> NonHashMapMultiVec<K, V> {
     }
 }
 
-impl<K: Copy, V: Copy> NonHashMapMultiVec<K, V> {
+impl<K: Copy, V: Copy> NoHashMapMultiVec<K, V> {
     pub fn retain<F>(&mut self, mut f: F)
     where
         F: FnMut(&K, &V) -> bool,
@@ -98,7 +98,7 @@ impl<K: Copy, V: Copy> NonHashMapMultiVec<K, V> {
     }
 }
 
-impl<K: Default, V: Default> NonHashMapMultiVec<K, V> {
+impl<K: Default, V: Default> NoHashMapMultiVec<K, V> {
     pub fn new() -> Self {
         Default::default()
     }
@@ -110,7 +110,7 @@ impl<K: Default, V: Default> NonHashMapMultiVec<K, V> {
     }
 }
 
-impl<K: PartialEq, V> NonHashMapMultiVec<K, V> {
+impl<K: PartialEq, V> NoHashMapMultiVec<K, V> {
     pub fn insert(&mut self, k: K, v: V) {
         let loc_k = self.vec_k.iter().position(|x| *x == k);
         match loc_k {
@@ -192,7 +192,7 @@ impl<K: PartialEq, V> NonHashMapMultiVec<K, V> {
     }
 }
 
-impl<K, V> Debug for NonHashMapMultiVec<K, V>
+impl<K, V> Debug for NoHashMapMultiVec<K, V>
 where
     K: Debug,
     V: Debug,
@@ -203,11 +203,11 @@ where
 }
 
 #[derive(Clone, Default)]
-pub struct NonHashMapVecTuple<K, V> {
+pub struct NoHashMapVecTuple<K, V> {
     vec: Vec<(K, V)>,
 }
 
-impl<K, V> NonHashMapVecTuple<K, V> {
+impl<K, V> NoHashMapVecTuple<K, V> {
     pub fn iter(&self) -> Iter<'_, (K, V)> {
         self.vec.iter()
     }
@@ -224,9 +224,9 @@ impl<K, V> NonHashMapVecTuple<K, V> {
         self.vec.iter().map(|x| &x.1).collect_vec()
     }
 
-    pub fn values_mut<'a>(&mut self) -> Map<IterMut<'_, (K, V)>, fn(&'a mut (K, V)) -> V> {
-        self.vec.iter_mut().map(|x| x.1)
-    }
+    // pub fn values_mut<'a>(&mut self) -> Map<IterMut<'_, (K, V)>, fn(&'a mut (K, V)) -> V> {
+    //     self.vec.iter_mut().map(|x| x.1)
+    // }
 
     pub fn into_values(self) -> IntoIter<V> {
         self.vec.into_iter().map(|x| x.1).collect_vec().into_iter()
@@ -280,7 +280,7 @@ impl<K, V> NonHashMapVecTuple<K, V> {
     }
 }
 
-impl<K: Default, V: Default> NonHashMapVecTuple<K, V> {
+impl<K: Default, V: Default> NoHashMapVecTuple<K, V> {
     pub fn new() -> Self {
         Default::default()
     }
@@ -292,7 +292,7 @@ impl<K: Default, V: Default> NonHashMapVecTuple<K, V> {
     }
 }
 
-impl<K: PartialEq, V> NonHashMapVecTuple<K, V> {
+impl<K: PartialEq, V> NoHashMapVecTuple<K, V> {
     pub fn insert(&mut self, k: K, v: V) {
         let loc_k = self.vec.iter().position(|x| x.0 == k);
         match loc_k {
@@ -352,7 +352,7 @@ impl<K: PartialEq, V> NonHashMapVecTuple<K, V> {
     }
 }
 
-impl<K, V> Debug for NonHashMapVecTuple<K, V>
+impl<K, V> Debug for NoHashMapVecTuple<K, V>
 where
     K: Debug,
     V: Debug,
@@ -367,9 +367,9 @@ where
 #[test]
 fn try_stuff_out() {
     use std::time::Instant;
-    type NonHashMap<K, V> = NonHashMapMultiVec<K, V>;
+    type NoHashMap<K, V> = NoHashMapMultiVec<K, V>;
 
-    let mut nhm = NonHashMapMultiVec::new();
+    let mut nhm = NoHashMapMultiVec::new();
     println!("{:?}", nhm);
     nhm.insert(0.1, 0.1);
     println!("{:?}", nhm);
@@ -377,7 +377,7 @@ fn try_stuff_out() {
     println!("{:?}, {:?}", nhm.get(&0.1), nhm.get(&0.2));
     println!("{:?}, {:?}", nhm.contains_key(&0.1), nhm.contains_key(&0.2));
 
-    let mut nhm = NonHashMapMultiVec::new();
+    let mut nhm = NoHashMapMultiVec::new();
     nhm.insert(0.1, "blue");
     nhm.insert(1.2, "green");
     nhm.insert(0.4, "red");
@@ -389,7 +389,7 @@ fn try_stuff_out() {
     nhm.swap_remove(&0.1);
     println!("{}, {:?}", nhm.len(), nhm);
 
-    let mut nhm = NonHashMapVecTuple::new();
+    let mut nhm = NoHashMapVecTuple::new();
     println!("{:?}", nhm);
     nhm.insert(0.1, 0.1);
     println!("{:?}", nhm);
@@ -397,7 +397,7 @@ fn try_stuff_out() {
     println!("{:?}, {:?}", nhm.get(&0.1), nhm.get(&0.2));
     println!("{:?}, {:?}", nhm.contains_key(&0.1), nhm.contains_key(&0.2));
 
-    let mut nhm = NonHashMapVecTuple::new();
+    let mut nhm = NoHashMapVecTuple::new();
     nhm.insert(0.1, "blue");
     nhm.insert(1.2, "green");
     nhm.insert(0.4, "red");
@@ -409,7 +409,7 @@ fn try_stuff_out() {
     nhm.swap_remove(&0.1);
     println!("{}, {:?}", nhm.len(), nhm);
 
-    let mut nhm = NonHashMap::new();
+    let mut nhm = NoHashMap::new();
     nhm.insert(0.1, "blue");
     nhm.insert(1.2, "green");
     nhm.insert(0.4, "red");
@@ -424,7 +424,7 @@ fn try_stuff_out() {
     let r = 10000isize;
 
     let before = Instant::now();
-    let mut nhm1 = NonHashMapMultiVec::new();
+    let mut nhm1 = NoHashMapMultiVec::new();
     for i in 0..r {
         nhm1.insert(i, i);
     }
@@ -432,7 +432,7 @@ fn try_stuff_out() {
     let after = Instant::now();
     println!("{:?} in {:?}", res, after - before);
     let before = Instant::now();
-    let mut nhm2 = NonHashMapVecTuple::new();
+    let mut nhm2 = NoHashMapVecTuple::new();
     for i in 0..r {
         nhm2.insert(i, i);
     }
@@ -441,7 +441,7 @@ fn try_stuff_out() {
     println!("{:?} in {:?}", res, after - before);
 
     let before = Instant::now();
-    let mut nhm1 = NonHashMapMultiVec::new();
+    let mut nhm1 = NoHashMapMultiVec::new();
     for i in 0..r {
         nhm1.insert(i, i);
     }
@@ -449,7 +449,7 @@ fn try_stuff_out() {
     let after = Instant::now();
     println!("{:?} in {:?}", res, after - before);
     let before = Instant::now();
-    let mut nhm2 = NonHashMapVecTuple::new();
+    let mut nhm2 = NoHashMapVecTuple::new();
     for i in 0..r {
         nhm2.insert(i, i);
     }
