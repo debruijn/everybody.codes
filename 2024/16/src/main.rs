@@ -124,32 +124,36 @@ fn run_part2(input_str: Vec<String>, _example: bool) -> String {
 }
 
 
-fn get_val(offset: &Vec<isize>, data: &Vec<VecDeque<String>>, steps: &Vec<isize>, i: isize, cycle_len: isize) -> (isize, Vec<isize>) {
-
+fn get_val(offset: &Vec<isize>, data: &Vec<Vec<String>>, steps: &Vec<isize>, i: isize, cycle_len: isize) -> (isize, Vec<isize>) {
+    // For a particular offset from the starting point, get the points and the new offset
     let this_offset = offset.iter().enumerate().map(|x| (steps[x.0] + x.1 + i + cycle_len) % cycle_len).collect_vec();
-    let this_row = data.iter().enumerate().map(|x| x.1[this_offset[x.0] as usize % x.1.len()].clone()).join(" ");
+    let this_row = data.iter().enumerate().map(|x| x.1[this_offset[x.0] as usize % x.1.len()].clone()).join("");
 
-    let count: Counter<char, usize> = Counter::from_iter(this_row.chars().step_by(2));
+    // let count: Counter<char, usize> = Counter::from_iter(this_row.chars().step_by(2));
+    let count: Counter<char, usize> = Counter::from_iter(this_row.chars());
     let mut pt_sum = 0;
     for x in count.values() {
         if *x > 2 {
             pt_sum += *x - 2;
         }
     }
-    // println!("{}, {}", this_row, pt_sum);
     (pt_sum as isize, this_offset)
 }
 
 // map: &mut HashMap<(usize, usize), (usize, usize)>
-fn get_minmax<'a>(offset: Vec<isize>, n_pull: isize, data: &Vec<VecDeque<String>>, steps: &Vec<isize>,
+fn get_minmax<'a>(offset: Vec<isize>, n_pull: isize, data: &Vec<Vec<String>>, steps: &Vec<isize>,
               cycle_len: isize, map: &mut HashMap<(Vec<isize>, isize), (isize, isize)>) -> (isize, isize) {
+    // For a particular offset from the starting point and number of pulls remaining, get the min
+    // and max points that can be achieved from that point:
+    // - If this input has not been estimated, calculate it recursively from all options for next
+    //   pull. Store the result in a HashMap.
+    // - If this input has already been estimated, return that.
 
-    if map.contains_key(&(offset.clone(), n_pull)) {
+    if map.contains_key(&(offset.clone(), n_pull)) {  // Already done
         map[&(offset, n_pull)]
-    } else {
+    } else {  // New input
         let mut res = Vec::new();
-        for i in -1..2 {
-            // let i_offset = (offset + i + cycle_len) % cycle_len;
+        for i in -1..2 { // push back, stay, or push forward
             let (i_val, i_offset) = get_val(&(offset.clone()), data, steps, i, cycle_len);
             if n_pull > 1 {
                 let (i_min, i_max) = get_minmax(i_offset, n_pull - 1, data, steps, cycle_len, map);
@@ -166,12 +170,12 @@ fn get_minmax<'a>(offset: Vec<isize>, n_pull: isize, data: &Vec<VecDeque<String>
 }
 
 fn run_part3(input_str: Vec<String>, _example: bool) -> String {
-
+    // Process input
     let mut map: HashMap<(Vec<isize>, isize), (isize, isize)> = HashMap::new();  // offset, pulls left
     let turns: Vec<isize> = input_str[0].split(',').map(|x| x.parse().unwrap()).collect_vec();
-    let mut vecs: Vec<VecDeque<String>> = Vec::new();
+    let mut vecs: Vec<Vec<String>> = Vec::new();
 
-    // TODO: to improve, don't even process the snout..
+    // Sort-of transpose the data. Work around chunks not being an iterator but usable in for-loop.
     for (i, row) in input_str[2..].iter().enumerate() {
         let mut iter_vec = Vec::new();
         for col in &row.chars().chunks(4) {
@@ -179,13 +183,15 @@ fn run_part3(input_str: Vec<String>, _example: bool) -> String {
         };
         for (j, col) in iter_vec.into_iter().enumerate() {
             if i==0 {
-                vecs.push(VecDeque::new());
+                vecs.push(Vec::new());
             }
             if col.len()>0 {
-                vecs[j].push_back(col);
+                vecs[j].push(col.chars().step_by(2).join(""));
             }
         }
     }
+
+    // Start the recursive algorithm
     let cycle_len = lcm(&*vecs.iter().enumerate().map(|x| x.1.len() as isize * (turns[x.0] % x.1.len() as isize)).collect_vec());
     let minmax = get_minmax(vec![0;turns.len()], 256, &vecs, &turns, cycle_len, &mut map);
 
