@@ -13,6 +13,43 @@ pub fn minmax(min_max: MinMaxResult<isize>) -> [isize; 2] {
     }
 }
 
+pub fn lcm(nums: &[isize]) -> isize {
+    if nums.len() == 1 {
+        return nums[0];
+    }
+    let a = nums[0];
+    let b = lcm(&nums[1..]);
+    a * b / gcd_of_two_numbers(a, b)
+}
+
+fn gcd_of_two_numbers(a: isize, b: isize) -> isize {
+    if b == 0 {
+        return a;
+    }
+    gcd_of_two_numbers(b, a % b)
+}
+
+pub fn extrapolate_cycle(first: usize, now: usize, target: usize, vals: Vec<isize>) -> isize {
+    let remaining = target - now;
+    let cycle_len = now - first;
+    let remaining = remaining % cycle_len;
+    let target_val = vals[first + remaining - 1];
+    target_val
+}
+
+pub fn extrapolate_cumulative_cycle(first: usize, now: usize, target: usize, vals: Vec<isize>) -> isize {
+    let remaining = target - now;
+    let cycle_len = now - first;
+    let cycle_count = (remaining + cycle_len) / cycle_len;
+    let remaining = remaining % cycle_len;
+    let cycle_val = vals[first..].iter().sum::<isize>();
+    let first_val = vals[..first].iter().sum::<isize>();
+    let remaining_val = vals[first..first + remaining].iter().sum::<isize>();
+    first_val + cycle_val * cycle_count as isize + remaining_val
+}
+
+
+
 pub fn run(f: fn(Vec<String>, bool) -> String, file: isize) -> String {
     let input_str = read_input(file);
     let before = Instant::now();
