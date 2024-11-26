@@ -30,7 +30,7 @@ fn main() {
 
     // Part 3: example and actual
     println!("Part 3");
-    println!("Example 1: {}", util::run(run_part3, -3));
+    println!("Example: {}", util::run(run_part3, -3));
     println!("Actual: {}\n", util::run(run_part3, 3));
 
 }
