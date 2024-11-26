@@ -27,7 +27,7 @@ fn find_closest(points: &Vec<&Pt>, constellation: &Vec<Pt>) -> (Pt, isize){
 
 fn run_part12(input_str: Vec<String>, _example: bool) -> String {
     let grid: GridSparse2D<u8, isize> = GridSparse2D::from_string(input_str, vec![b'.']);
-    let points: Vec<&Pt> = grid.0.keys().collect_vec();
+    let points: Vec<&Pt> = grid.keys().collect_vec();
     let mut constellation: Vec<Pt> = vec![*points[0]];
 
     let mut constellation_len = points.len() as isize;
@@ -42,7 +42,7 @@ fn run_part12(input_str: Vec<String>, _example: bool) -> String {
 
 fn run_part3(input_str: Vec<String>, _example: bool) -> String {
     let grid: GridSparse2D<u8, isize> = GridSparse2D::from_string(input_str, vec![b'.']);
-    let mut points: Vec<&Pt> = grid.0.keys().collect_vec();
+    let mut points: Vec<&Pt> = grid.keys().collect_vec();
 
     let mut score = Vec::new();
     while points.len() > 0 {

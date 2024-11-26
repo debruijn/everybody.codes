@@ -30,6 +30,7 @@ use std::{
     hash::Hash,
     ops::{Add, Div, Mul, Neg, Sub},
 };
+use std::collections::hash_map::Keys;
 // TODO: could make utility impls for 2d and 3d situations, incl getting data quickly with x, y, z
 
 pub trait Point1D: Debug + Default + PrimInt + Display + Zero + One + Mul + Neg + From<i8> {}
@@ -520,7 +521,7 @@ where
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct GridSparse2D<T, U>(HashMap<Point<U, 2>, T>)
+pub struct GridSparse2D<T, U>(pub HashMap<Point<U, 2>, T>)
 where
     U: Point1D + Hash + Debug + TryFrom<usize> + Bounded;
 
@@ -609,6 +610,10 @@ where
         for (key, value) in elements.iter() {
             self.0.insert(*key, *value);
         }
+    }
+
+    pub fn keys(&self) -> Keys<'_, Point<U, 2>, T> {
+        self.0.keys()
     }
 
     pub fn set_pt(&mut self, el: T, pt: Point<U, 2>) {
@@ -851,6 +856,10 @@ where
 
     pub fn contains(&self, pt: Point<U, N>) -> bool {
         self.0.contains_key(&pt)
+    }
+
+    pub fn keys(&self) -> Keys<'_, Point<U, N>, T> {
+        self.0.keys()
     }
 
     pub fn get(&self, loc: [U; N]) -> T {
