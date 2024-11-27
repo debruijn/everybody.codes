@@ -582,7 +582,7 @@ where
     pub fn get_dims(&self) -> [U; 2] {
         self.get_bounds()
             .iter()
-            .map(|x| x[0] - x[1] + U::one())
+            .map(|x| x[1] - x[0] + U::one())
             .collect_vec()
             .try_into()
             .unwrap()
@@ -817,7 +817,7 @@ where
     pub fn get_dims(&self) -> [U; N] {
         self.get_bounds()
             .iter()
-            .map(|x| x[0] - x[1] + U::one())
+            .map(|x| x[1] - x[0] + U::one())
             .collect_vec()
             .try_into()
             .unwrap()
