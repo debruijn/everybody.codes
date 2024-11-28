@@ -18,11 +18,8 @@ fn run_part1(input_str: Vec<String>, _example: bool) -> String {
     let mut final_step_count= 0;
     while count < trees.len() {
         let (this_loc, this_count) = queue.pop_front().unwrap();
-
-
         let mut neighbors = grid.get_neighbors_ok(this_loc);
         neighbors = neighbors.into_iter().filter(|x| !hist.contains(&x.0)).collect_vec();
-
         for neighbor in neighbors.iter() {
             if neighbor.1 == b'P' {
                 count += 1;
@@ -30,14 +27,10 @@ fn run_part1(input_str: Vec<String>, _example: bool) -> String {
                     final_step_count = this_count + 1;
                 }
             }
-
             hist.push(neighbor.0);
             queue.push_back((neighbor.0, this_count+1))
-
         }
-
     }
-
     final_step_count.to_string()
 }
 
@@ -53,15 +46,10 @@ fn run_part2(input_str: Vec<String>, _example: bool) -> String {
     hist.push(start2);
     let mut final_step_count= 0;
 
-    println!("{:?}, {:?}", start2, grid.get_dims());
-
     while count < trees.len() {
         let (this_loc, this_count) = queue.pop_front().unwrap();
-
-
         let mut neighbors = grid.get_neighbors_ok(this_loc);
         neighbors = neighbors.into_iter().filter(|x| !hist.contains(&x.0)).collect_vec();
-
         for neighbor in neighbors.iter() {
             if neighbor.1 == b'P' {
                 if !hist.contains(&neighbor.0) {
@@ -71,64 +59,15 @@ fn run_part2(input_str: Vec<String>, _example: bool) -> String {
                     }
                 }
             }
-
             hist.push(neighbor.0);
             queue.push_back((neighbor.0, this_count+1))
-
         }
-
     }
-
     final_step_count.to_string()
 }
 
 
-// fn run_algo(grid: &GridSparse2D<u8, isize>, start: &Pt) -> isize {
-//     let trees = grid.filter_key(b'P');
-//     let mut count = 0;
-//     let mut total_time = 0;
-//     let mut queue = VecDeque::from(vec!((*start, 0)));
-//     let mut hist = Vec::new();
-//     hist.push(*start);
-//     while count < trees.len() {
-//         let (this_loc, this_count) = queue.pop_front().unwrap();
-//
-//
-//         let mut neighbors = grid.get_neighbors_ok(this_loc);
-//         neighbors = neighbors.into_iter().filter(|x| !hist.contains(&x.0)).collect_vec();
-//
-//         for neighbor in neighbors.iter() {
-//             if neighbor.1 == b'P' {
-//                 // println!("{}, {}, {:?}", this_count+1, count, neighbor);
-//                 count += 1;
-//                 total_time += this_count + 1;
-//             }
-//
-//             hist.push(neighbor.0);
-//             queue.push_back((neighbor.0, this_count+1))
-//
-//         }
-//
-//     }
-//     total_time
-// }
-//
-//
-// fn run_part3(input_str: Vec<String>, _example: bool) -> String {
-//     let mut grid = GridSparse2D::from_string(input_str, vec!(b'#'));
-//     let pts = grid.filter_key(b'.');
-//     let mut res = Vec::new();
-//     println!("{}", pts.iter().count());
-//     for (i, pt) in pts.iter().enumerate() {
-//         let this = run_algo(&grid, pt);
-//         res.push(this);
-//         println!("{}, {}, {:?}, {}", i, this, pt, res.iter().min().unwrap());
-//     }
-//     res.iter().min().unwrap().to_string()
-// }
-
-
-fn run_algo_fast(grid: &GridSparse2D<u8, isize>, start: &Pt) -> HashMap<Pt, isize> {
+fn run_bfs_pt3(grid: &GridSparse2D<u8, isize>, start: &Pt) -> HashMap<Pt, isize> {
     let trees = grid.filter_key(b'.');
     let mut count = 0;
     let mut queue = VecDeque::from(vec!((*start, 0)));
@@ -158,7 +97,7 @@ fn run_algo_fast(grid: &GridSparse2D<u8, isize>, start: &Pt) -> HashMap<Pt, isiz
 }
 
 
-fn run_part3_fast(input_str: Vec<String>, _example: bool) -> String {
+fn run_part3(input_str: Vec<String>, _example: bool) -> String {
     let grid = GridSparse2D::from_string(input_str, vec!(b'#'));
     let trees = grid.filter_key(b'P');
 
@@ -167,7 +106,7 @@ fn run_part3_fast(input_str: Vec<String>, _example: bool) -> String {
     // Then find point with lowest sum of distances;
     let mut tree_map = HashMap::new();
     for tree in trees.iter() {
-        tree_map.insert(tree, run_algo_fast(&grid, tree));
+        tree_map.insert(tree, run_bfs_pt3(&grid, tree));
     }
 
     let mut min_pt = isize::MAX;
@@ -177,6 +116,66 @@ fn run_part3_fast(input_str: Vec<String>, _example: bool) -> String {
     }
 
     min_pt.to_string()
+}
+
+
+
+fn run_part3_faster(input_str: Vec<String>, _example: bool) -> String {
+    // Construct grid, and get points for trees and allowed points for the path
+    let grid = GridSparse2D::from_string(input_str, vec!(b'#'));
+    let trees = grid.filter_key(b'P');
+    let allowed = grid.filter_keys(vec!(b'.', b'P'));
+
+    // Construct queue (what to do next), hist (what has been done before) and dist (target metric)
+    let mut queue: VecDeque<(usize, Pt, usize)> = VecDeque::from(trees.iter().enumerate().map(|x| (x.0, *x.1, 0)).collect_vec());
+    let mut dist: HashMap<Pt, usize> = HashMap::from_iter(allowed.iter().map(|x| (*x, 0)));
+    let mut hist = Vec::new();
+    for tree in trees.iter() {
+        hist.push(vec!(*tree))
+    }
+
+    // Helper variables: best metric so far and how many trees have reached each point
+    let mut best = usize::MAX;
+    let mut count_trees: HashMap<Pt, usize> = HashMap::from_iter(allowed.into_iter().map(|x| (x, 0)));
+
+    // Run BFS until queue is empty.
+    // - Trimming: if there is a candidate solution, ignore all points that can't reach that
+    // - This is not guaranteed and with harsher trimming (see below) you don't get an optimum.
+    while queue.len() > 0 {
+        let (this_tree, this_loc, this_count) = queue.pop_front().unwrap();
+
+        // Neighbors of the current location. Filter points that have been seen in regard to tree.
+        let mut neighbors = grid.get_neighbors_ok(this_loc);
+        neighbors = neighbors.into_iter().filter(|x| !hist[this_tree].contains(&x.0)).collect_vec();
+
+        for neighbor in neighbors.iter() {
+            // For each remaining neighbor that is not a tree, update dist and count.
+            if neighbor.1 == b'.' {
+                count_trees.insert(neighbor.0, count_trees[&neighbor.0] + 1);
+                dist.insert(neighbor.0, dist[&neighbor.0] + this_count+1);
+                if count_trees[&neighbor.0] == trees.len() {
+                    // If this neighbor has now been seen by all trees, check if it is new best
+                    if dist[&neighbor.0] < best {
+                        best = dist[&neighbor.0];
+                    }
+                }
+            }
+            hist[this_tree].push(neighbor.0);
+
+            // Doesn't work! Even though point will not be solution, it might be on the path towards
+            // the solution for one tree.
+            // let best_achievable = dist[&neighbor.0] + this_count * (trees.len() - count_trees[&neighbor.0]);
+
+            // Instead, a conservative fallback.
+            let best_achievable = dist[&neighbor.0];
+            if best_achievable <= best {
+                queue.push_back((this_tree, neighbor.0, this_count + 1))
+            }
+
+        }
+
+    }
+    best.to_string()
 }
 
 
@@ -195,7 +194,8 @@ fn main() {
 
     // Part 3: example and actual
     println!("Part 3");
-    println!("Example: {}", util::run(run_part3_fast, -3));
-    println!("Actual: {}\n", util::run(run_part3_fast, 3));
+    println!("Example initial solution: {}", util::run(run_part3, -3));
+    println!("Example faster solution (for bigger data): {}", util::run(run_part3_faster, -3));
+    println!("Actual with faster solution: {}\n", util::run(run_part3_faster, 3));
 
 }
