@@ -367,6 +367,16 @@ where
         }
     }
 
+    pub fn get_all_pts(&self) -> Vec<Point<isize,2>> {
+        let mut vec = Vec::new();
+        for i in 0..self.get_dims()[0] {
+            for j in 0..self.get_dims()[1] {
+                vec.push(Point::<isize,2>::new([i as isize, j as isize]))
+            }
+        }
+        vec
+    }
+
     pub fn get(&self, loc: (isize, isize)) -> T {
         self.0[loc.0 as usize][loc.1 as usize]
     }
@@ -400,6 +410,11 @@ where
             }
         }
         res
+    }
+
+    pub fn get_neighbors_filter(&self, pt: Point<isize,2>, ign: Vec<T>) -> Vec<(Point<isize, 2>, T)> {
+        let neighbors = self.get_neighbors_ok(pt);
+        neighbors.into_iter().filter(|x| !ign.contains(&x.1)).collect_vec()
     }
 
     pub fn get_neighbors_options(
@@ -520,6 +535,21 @@ where
     }
 }
 
+
+impl<T> Grid<T>
+where
+    T: Copy + From<u8> + Debug + PartialEq + Eq + Hash,
+{
+    pub fn filter_keys_by_key(&self, keys: Vec<T>) -> HashMap<T, Vec<Point<isize, 2>>> {
+        let mut map = HashMap::new();
+        for key in keys.iter() {
+            map.insert(*key, self.filter_key(*key));
+        }
+        map
+    }
+}
+
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct GridSparse2D<T, U>(pub HashMap<Point<U, 2>, T>)
 where
@@ -628,6 +658,10 @@ where
         self.0.contains_key(&pt)
     }
 
+    pub fn get_all_pts(&self) -> Vec<&Point<U, 2>> {
+        self.keys().collect_vec()
+    }
+
     pub fn get(&self, loc: (U, U)) -> T {
         self.0[&Point(loc.into())]
     }
@@ -671,6 +705,11 @@ where
             }
         }
         res
+    }
+
+    pub fn get_neighbors_filter(&self, pt: Point<U, 2>, ign: Vec<T>) -> Vec<(Point<U, 2>, T)> {
+        let neighbors = self.get_neighbors_ok(pt);
+        neighbors.into_iter().filter(|x| !ign.contains(&x.1)).collect_vec()
     }
 
     pub fn get_neighbors_options(
@@ -718,7 +757,7 @@ where
                     .map(|x| (x.1 - bounds[x.0][0]).rem_euclid(&dims[x.0]) + bounds[x.0][0])
                     .collect::<Vec<U>>(),
             )
-            .unwrap(),
+                .unwrap(),
         )
     }
 
@@ -752,6 +791,21 @@ where
             .filter(|x| keys.contains(x.1))
             .map(|x| *x.0)
             .collect_vec()
+    }
+}
+
+impl<T, U, E> GridSparse2D<T, U>
+where
+    T: Copy + From<u8> + Debug + PartialEq + Eq + Hash,
+    U: Point1D + Hash + TryFrom<usize, Error = E> + Debug + Neg<Output = U> + Euclid,
+    E: Debug,
+{
+    pub fn filter_keys_by_key(&self, keys: Vec<T>) -> HashMap<T, Vec<Point<U, 2>>> {
+        let mut map = HashMap::new();
+        for key in keys.iter() {
+            map.insert(*key, self.filter_key(*key));
+        }
+        map
     }
 }
 
@@ -862,6 +916,10 @@ where
         self.0.keys()
     }
 
+    pub fn get_all_pts(&self) -> Vec<&Point<U,N>> {
+        self.keys().collect_vec()
+    }
+
     pub fn get(&self, loc: [U; N]) -> T {
         self.0[&Point(loc.into())]
     }
@@ -896,6 +954,11 @@ where
             }
         }
         res
+    }
+
+    pub fn get_neighbors_filter(&self, pt: Point<U, N>, ign: Vec<T>) -> Vec<(Point<U, N>, T)> {
+        let neighbors = self.get_neighbors_ok(pt);
+        neighbors.into_iter().filter(|x| !ign.contains(&x.1)).collect_vec()
     }
 
     pub fn get_neighbors_options(
@@ -979,6 +1042,23 @@ where
             .collect_vec()
     }
 }
+
+
+impl<T, const N: usize, U, E> GridSparse<T, N, U>
+where
+    T: Copy + From<u8> + Debug + PartialEq + Eq + Hash,
+    U: Point1D + Hash + TryFrom<usize, Error = E> + Debug + Neg<Output = U> + Euclid,
+    E: Debug,
+{
+    pub fn filter_keys_by_key(&self, keys: Vec<T>) -> HashMap<T, Vec<Point<U, N>>> {
+        let mut map = HashMap::new();
+        for key in keys.iter() {
+            map.insert(*key, self.filter_key(*key));
+        }
+        map
+    }
+}
+
 
 #[test]
 fn try_stuff_out() {
