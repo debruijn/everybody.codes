@@ -1,0 +1,11 @@
+[package]
+name = "everybody_codes_2024_19"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+itertools = "0.13.0"
+everybody_codes_util = { path = "../../util"}
+
+[profile.dev]
+opt-level = 3
