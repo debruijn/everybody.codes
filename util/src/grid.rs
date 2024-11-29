@@ -40,7 +40,7 @@ impl<T> Point1D for T where
 {
 }
 
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
 pub struct Point<T: Point1D, const N: usize>(pub [T; N]);
 
 impl<T: Point1D, const N: usize> Point<T, N> {
@@ -367,6 +367,12 @@ where
         }
     }
 
+    pub fn get_data(&self) -> &Vec<Vec<T>> {
+        &self.0
+    }
+
+    // pub fn get_all_chars
+
     pub fn get_all_pts(&self) -> Vec<Point<isize,2>> {
         let mut vec = Vec::new();
         for i in 0..self.get_dims()[0] {
@@ -561,10 +567,6 @@ where
     U: Point1D + Hash + TryFrom<usize, Error = E> + Debug + Neg<Output = U> + Euclid,
     E: Debug,
 {
-    pub fn new() -> Self {
-        // Make a new empty Grid
-        GridSparse2D(HashMap::new())
-    }
 
     pub fn from_string(vec_str: Vec<String>, ign: Vec<u8>) -> Self {
         // '8' -> 56 if T is u8, usize, etc
@@ -608,6 +610,19 @@ where
         }
         GridSparse2D(this_map)
     }
+}
+
+impl<T, U, E> GridSparse2D<T, U>
+where
+    T: Copy + Debug + PartialEq,
+    U: Point1D + Hash + TryFrom<usize, Error = E> + Debug + Neg<Output = U> + Euclid,
+    E: Debug,
+{
+    pub fn new() -> Self {
+        // Make a new empty Grid
+        GridSparse2D(HashMap::new())
+    }
+
 
     pub fn get_dims(&self) -> [U; 2] {
         self.get_bounds()
@@ -660,6 +675,18 @@ where
 
     pub fn get_all_pts(&self) -> Vec<&Point<U, 2>> {
         self.keys().collect_vec()
+    }
+
+    pub fn get_all_pts_sorted(&self) -> Vec<&Point<U, 2>> {
+        self.keys().sorted().collect_vec()
+    }
+
+    pub fn get_data(&self) -> &HashMap<Point<U, 2>, T> {
+        &self.0
+    }
+
+    pub fn set_data(&mut self, new_data: HashMap<Point<U, 2>, T>) {
+        self.0 = new_data;
     }
 
     pub fn get(&self, loc: (U, U)) -> T {
