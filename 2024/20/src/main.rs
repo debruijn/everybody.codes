@@ -4,7 +4,6 @@ use everybody_codes_util as util;
 use util::grid::{Grid, Point};
 
 
-
 type Pt = Point<isize, 2>;
 
 fn run_part1(input_str: Vec<String>, _example: bool) -> String {
@@ -15,7 +14,6 @@ fn run_part1(input_str: Vec<String>, _example: bool) -> String {
     let dirs = [Pt::new([1, 0]), Pt::new([-1, 0]), Pt::new([0, 1]), Pt::new([0, -1])];
 
     let mut hist = HashMap::new();
-    // let mut queue = VecDeque::from_iter(vec!((curr, altitude, seconds_left, dir)).into_iter());
     let mut queue = VecDeque::new();
     for dir in dirs.into_iter() {
         queue.push_back((start, altitude, seconds_left, dir));
@@ -24,10 +22,8 @@ fn run_part1(input_str: Vec<String>, _example: bool) -> String {
 
     while queue.len() > 0 {
         let (loc, alt, sec, dir) = queue.pop_front().unwrap();
-        // println!("{:?}", (loc, alt, sec, dir) );
         if sec == 0 {
             if alt > highest {
-                // println!("{:?}", (loc, alt, sec, dir));
                 highest = alt;
             }
             continue
@@ -42,14 +38,6 @@ fn run_part1(input_str: Vec<String>, _example: bool) -> String {
                 b'-' => -2,
                 _ => -1
             };
-            // if !hist.contains_key(&(neighbor, sec - 1, neighbor.0-loc)) {
-            //     hist.insert((neighbor, sec - 1, neighbor.0-loc), new_alt);
-            // } else {
-            //     if hist[&(neighbor, sec - 1, neighbor.0 - loc)] >= new_alt {
-            //         continue
-            //     }
-            //     hist.insert((neighbor, sec - 1, neighbor.0 - loc), new_alt);
-            // }
             if !hist.contains_key(&(neighbor, neighbor.0-loc)) {
                 hist.insert((neighbor, neighbor.0-loc), new_alt);
             } else {
@@ -73,7 +61,6 @@ fn run_part2(input_str: Vec<String>, _example: bool) -> String {
     let dirs = [Pt::new([1, 0]), Pt::new([-1, 0]), Pt::new([0, 1]), Pt::new([0, -1])];
 
     let mut hist = HashMap::new();
-    // let mut queue = VecDeque::from_iter(vec!((curr, altitude, seconds_left, dir)).into_iter());
     let mut queue = VecDeque::new();
     for dir in dirs.into_iter() {
         queue.push_back((start, altitude, 0, dir, [false, false, false]));
@@ -82,7 +69,6 @@ fn run_part2(input_str: Vec<String>, _example: bool) -> String {
 
     while queue.len() > 0 {
         let (loc, alt, sec, dir, vis) = queue.pop_front().unwrap();
-        // println!("{:?}", (loc, alt, sec, dir, vis) );
         if vis.iter().all(|x| *x) && loc == start && alt >= 10000 {
             fastest = sec;
             break
@@ -92,12 +78,14 @@ fn run_part2(input_str: Vec<String>, _example: bool) -> String {
         neighbors = neighbors.into_iter().filter(|x| x.0 != loc - dir).collect_vec();
 
         for neighbor in neighbors {
+            // New altitude based on what is the char in the grid
             let new_alt = alt + match neighbor.1 {
                 b'+' => 1,
                 b'-' => -2,
                 _ => -1
             };
 
+            // Update visited checkpoints (A, B, C) based on what we have already visited
             let new_vis = if !checks.contains(&neighbor.0) { vis } else {
                 if neighbor.0 == checks[0] {
                     [true, vis[1], vis[2]]
@@ -112,26 +100,29 @@ fn run_part2(input_str: Vec<String>, _example: bool) -> String {
                 }
             };
 
-            // if !hist.contains_key(&(neighbor, sec - 1, neighbor.0-loc)) {
-            //     hist.insert((neighbor, sec - 1, neighbor.0-loc), new_alt);
-            // } else {
-            //     if hist[&(neighbor, sec - 1, neighbor.0 - loc)] >= new_alt {
-            //         continue
-            //     }
-            //     hist.insert((neighbor, sec - 1, neighbor.0 - loc), new_alt);
-            // }
-            if !hist.contains_key(&(neighbor, neighbor.0-loc, new_vis)) {
-                hist.insert((neighbor, neighbor.0-loc, new_vis), new_alt);
+            // For checking/updating history, ignore direction in the history, which could matter
+            // for other grids. If so, comment this out and uncomment the section below (5x slower).
+            if !hist.contains_key(&(neighbor, new_vis)) {
+                hist.insert((neighbor, new_vis), new_alt);
             } else {
-                if hist[&(neighbor, neighbor.0 - loc, new_vis)] >= new_alt {
+                if hist[&(neighbor, new_vis)] >= new_alt {
                     continue
                 }
-                hist.insert((neighbor, neighbor.0 - loc, new_vis), new_alt);
+                hist.insert((neighbor, new_vis), new_alt);
             }
+
+            // if !hist.contains_key(&(neighbor, neighbor.0-loc, new_vis)) {
+            //     hist.insert((neighbor, neighbor.0-loc, new_vis), new_alt);
+            // } else {
+            //     if hist[&(neighbor, neighbor.0 - loc, new_vis)] >= new_alt {
+            //         continue
+            //     }
+            //     hist.insert((neighbor, neighbor.0 - loc, new_vis), new_alt);
+            // }
+
             queue.push_back((neighbor.0, new_alt, sec + 1, neighbor.0 - loc, new_vis))
         }
     }
-
     fastest.to_string()
 }
 
@@ -140,15 +131,13 @@ fn run_algo_for(altitude: isize, grid: &Grid<u8>) -> isize {
     let dirs = [Pt::new([1, 0]), Pt::new([-1, 0]), Pt::new([0, 1]), Pt::new([0, -1])];
 
     let mut hist = HashMap::new();
-    let mut alt_hist = HashMap::new();  // double name :)
+    let mut alt_hist = HashMap::new();  // best altitude at this south-distance
     let mut queue = VecDeque::new();
     for dir in dirs.into_iter() {
         queue.push_back((start, altitude, dir, 0));
     }
     let mut most_south = 0;
     let mult = grid.get_dims()[0] as isize;
-    // let mut hist_wrap = HashMap::new();
-
 
     while queue.len() > 0 {
         let (loc, alt, dir, loops) = queue.pop_front().unwrap();
@@ -180,6 +169,7 @@ fn run_algo_for(altitude: isize, grid: &Grid<u8>) -> isize {
             }
             let actual_pt = neighbor.0 + Pt::new([(loops + neighbor.2) * mult, 0]);
 
+            // Keep track of best altitude for each point/direction -> ignore if worse
             if !hist.contains_key(&(actual_pt, neighbor.0-loc)) {
                 hist.insert((actual_pt, neighbor.0-loc), new_alt);
             } else {
@@ -189,6 +179,7 @@ fn run_algo_for(altitude: isize, grid: &Grid<u8>) -> isize {
                 hist.insert((actual_pt, neighbor.0 - loc), new_alt);
             }
 
+            // Keep track of best south coordinate for each altitude -> ignore if more than 3 worse
             if !alt_hist.contains_key(&new_alt) {
                 alt_hist.insert(new_alt, actual_pt.0[0]);
             } else {
@@ -209,6 +200,9 @@ fn run_algo_for(altitude: isize, grid: &Grid<u8>) -> isize {
 fn run_part3(input_str: Vec<String>, _example: bool) -> String {
     let grid = Grid::from_string(input_str);
 
+    // After less than 100 steps, the optimal route is linear or repeated linearly, so we can get
+    // the result at two low targets, find the linear relationship, and extrapolate to the high
+    // actual target.
     let nums = [100, 1000];
     let ans = nums.map(|x| run_algo_for(x, &grid));
 
