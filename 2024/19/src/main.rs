@@ -208,6 +208,60 @@ fn run_part3(input_str: Vec<String>, _example: bool) -> String {
     format!("{}", res)
 }
 
+
+fn run_bonus(input_str: Vec<String>, _example: bool) -> String {
+    let mut grid = GridSparse2D::from_string(input_str[2..].to_owned(), Vec::new());
+    let mut target: isize = if _example { 100 } else { 1024 };
+
+    // Construct mapping for 1 iteration of the process
+    let mut pt_grid: GridSparse2D<Pt, isize> = GridSparse2D::new();
+    let mut mapping = single_iter_mapping(&grid, &mut pt_grid, input_str[0].to_string());
+
+    // Construct mapping for nr of process iterations equal to all powers of 2 up to target nr
+    let mut pow: u32 = 1;
+    let mut pow_mapping = Vec::new();
+    pow_mapping.push(mapping.clone());
+    while 2_isize.pow(pow) <= target {
+        mapping = double_iter_mapping(&mapping);
+        pow_mapping.push(mapping.clone());
+        pow += 1;
+    }
+
+    // Apply to all points the mapping of highest power of 2 below target, and repeat until target=0
+    let (mut new_keys, values): (Vec<Pt>, Vec<char>) =
+        grid.get_data().into_iter().map(|x| (*x.0, *x.1)).unzip();
+    while target > 0 {
+        let this_mapping = pow_mapping.pop().unwrap();
+        if 2_isize.pow(pow_mapping.len() as u32) > target {
+            continue;
+        }
+        new_keys = new_keys
+            .into_iter()
+            .map(|x| *this_mapping[&x])
+            .collect_vec();
+        target -= 2_isize.pow(pow_mapping.len() as u32);
+    }
+
+    // For reusing the same way to get the result between > and <: adjust grid to use the new keys
+    let new_data = HashMap::from_iter(zip(new_keys, values));
+    grid.set_data(new_data);
+
+    // Print grid
+    let mut vec_res = Vec::new();
+    for i in 0..grid.get_dims()[0] {
+        let mut this_str = String::new();
+        for j in 0..65 { //grid.get_dims()[1] {
+            // println!("{:?}", grid.keys());
+            // println!("{:?}, {:?}", (i, j), grid.get_dims());
+            this_str += grid.get((i, j)).to_string().as_str();
+        }
+        println!("{}", this_str);
+        vec_res.push(this_str)
+    }
+    format!("\n{:?}", vec_res)
+}
+
+
 fn main() {
     // Part 1: example and actual
     println!("Part 1");
@@ -225,4 +279,8 @@ fn main() {
     println!("Part 3");
     println!("Actual: {}", util::run(run_part3, -2));
     println!("Actual: {}\n", util::run(run_part3, 3));
+
+    // Bonus "Part 4" from the creator on Reddit (named "2024 Q21")
+    println!("Bonus: {}\n", util::run(run_bonus, 4));
+
 }
